@@ -17,9 +17,10 @@ import (
 
 // FleetManager handles EC2 Fleet operations for Slurm node provisioning
 type FleetManager struct {
-	logger    *zap.Logger
-	ec2Client *ec2.Client
-	region    string
+	logger        *zap.Logger
+	ec2Client     *ec2.Client
+	region        string
+	gangScheduler *GangScheduler
 }
 
 // NewFleetManager creates a new fleet manager
@@ -43,11 +44,17 @@ func NewFleetManager(logger *zap.Logger, awsConfig *burstConfig.AWSConfig) (*Fle
 		}
 	}
 
-	return &FleetManager{
+	ec2Client := ec2.NewFromConfig(cfg)
+	fleetManager := &FleetManager{
 		logger:    logger,
-		ec2Client: ec2.NewFromConfig(cfg),
+		ec2Client: ec2Client,
 		region:    awsConfig.Region,
-	}, nil
+	}
+
+	// Initialize gang scheduler
+	fleetManager.gangScheduler = NewGangScheduler(logger, ec2Client, fleetManager)
+
+	return fleetManager, nil
 }
 
 // FleetRequest represents a request to launch EC2 instances
@@ -87,6 +94,11 @@ func (f *FleetManager) LaunchInstanceFleet(ctx context.Context, req *FleetReques
 		zap.Bool("mpi_job", req.Job.IsMPIJob),
 		zap.Bool("requires_efa", req.InstanceRequirements.RequiresEFA))
 
+	// Validate prerequisites
+	if err := f.validateFleetRequest(req); err != nil {
+		return nil, fmt.Errorf("fleet request validation failed: %w", err)
+	}
+
 	// Create placement group if needed for MPI jobs
 	var placementGroupName string
 	if req.InstanceRequirements.PlacementGroupType != "" && req.Job.IsMPIJob {
@@ -103,7 +115,13 @@ func (f *FleetManager) LaunchInstanceFleet(ctx context.Context, req *FleetReques
 		return nil, fmt.Errorf("failed to build fleet request: %w", err)
 	}
 
-	// Launch fleet
+	// Use gang scheduling for MPI jobs requiring atomic provisioning
+	if req.Job.IsMPIJob && req.InstanceRequirements.RequiresEFA {
+		f.logger.Info("Using gang scheduling for MPI job")
+		return f.gangScheduler.AtomicProvision(ctx, req)
+	}
+
+	// Launch fleet normally for non-MPI jobs
 	fleetResult, err := f.ec2Client.CreateFleet(ctx, fleetRequest)
 	if err != nil {
 		return nil, fmt.Errorf("EC2 CreateFleet failed: %w", err)
@@ -227,10 +245,16 @@ func (f *FleetManager) buildLaunchTemplateOverrides(req *FleetRequest, placement
 		}
 	}
 
+	// Filter for EFA-capable instances if EFA is required
+	if req.InstanceRequirements.RequiresEFA {
+		overrides = f.enhanceLaunchTemplateForEFA(overrides, true)
+	}
+
 	f.logger.Debug("Built launch template overrides",
 		zap.Int("override_count", len(overrides)),
 		zap.Strings("instance_types", instanceTypes),
-		zap.String("placement_group", placementGroupName))
+		zap.String("placement_group", placementGroupName),
+		zap.Bool("efa_filtered", req.InstanceRequirements.RequiresEFA))
 
 	return overrides
 }
@@ -544,4 +568,89 @@ func (f *FleetManager) GetInstancePricing(ctx context.Context, instanceTypes []s
 	}
 
 	return pricing, nil
+}
+
+// validateFleetRequest validates that a fleet request has all required fields
+func (f *FleetManager) validateFleetRequest(req *FleetRequest) error {
+	if len(req.NodeIds) == 0 {
+		return fmt.Errorf("no node IDs specified")
+	}
+
+	if len(req.SubnetIds) == 0 {
+		return fmt.Errorf("no subnet IDs specified")
+	}
+
+	if req.LaunchTemplate.Name == "" && req.LaunchTemplate.ID == "" {
+		return fmt.Errorf("launch template name or ID must be specified")
+	}
+
+	if req.InstanceRequirements == nil {
+		return fmt.Errorf("instance requirements not specified")
+	}
+
+	// MPI-specific validations
+	if req.Job != nil && req.Job.IsMPIJob {
+		if req.InstanceRequirements.RequiresEFA && req.InstanceRequirements.PlacementGroupType == "" {
+			f.logger.Warn("MPI job requires EFA but no placement group specified - may impact performance")
+		}
+
+		if len(req.NodeIds) > 1 && req.InstanceRequirements.PlacementGroupType == "" {
+			f.logger.Warn("Multi-node MPI job without placement group - may impact performance")
+		}
+	}
+
+	return nil
+}
+
+// enhanceLaunchTemplateForEFA modifies launch template overrides to enable EFA if required
+func (f *FleetManager) enhanceLaunchTemplateForEFA(overrides []types.FleetLaunchTemplateOverridesRequest, requiresEFA bool) []types.FleetLaunchTemplateOverridesRequest {
+	if !requiresEFA {
+		return overrides
+	}
+
+	// Filter for EFA-capable instance types
+	var efaOverrides []types.FleetLaunchTemplateOverridesRequest
+	for _, override := range overrides {
+		instanceType := string(override.InstanceType)
+
+		// Check if instance type supports EFA
+		if f.supportsEFA(instanceType) {
+			efaOverrides = append(efaOverrides, override)
+		} else {
+			f.logger.Debug("Filtering out non-EFA instance type",
+				zap.String("instance_type", instanceType))
+		}
+	}
+
+	if len(efaOverrides) == 0 {
+		f.logger.Warn("No EFA-capable instance types found in overrides, using original list")
+		return overrides
+	}
+
+	f.logger.Info("Filtered for EFA-capable instances",
+		zap.Int("original_count", len(overrides)),
+		zap.Int("efa_count", len(efaOverrides)))
+
+	return efaOverrides
+}
+
+// supportsEFA checks if an instance type supports EFA
+func (f *FleetManager) supportsEFA(instanceType string) bool {
+	// List of EFA-capable instance families
+	efaFamilies := []string{
+		"c5n", "c6i", "c6in", "c7i",
+		"hpc6a", "hpc6id", "hpc7a", "hpc7g",
+		"m5n", "m5dn", "m6i", "m6in", "m7i",
+		"r5n", "r5dn", "r6i", "r6in", "r7i",
+		"p3dn", "p4d", "p5",
+		"trn1", "trn1n",
+	}
+
+	for _, family := range efaFamilies {
+		if strings.HasPrefix(instanceType, family+".") {
+			return true
+		}
+	}
+
+	return false
 }
