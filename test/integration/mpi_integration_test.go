@@ -5,7 +5,9 @@ package integration
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -32,21 +34,21 @@ func TestMPIIntegration(t *testing.T) {
 	scheduler := scheduler.NewMPIScheduler(logger)
 
 	testCases := []struct {
-		name                    string
-		job                     *types.SlurmJob
-		expectedMPI             bool
-		expectedEFARequired     bool
-		expectedEFAPreferred    bool
-		expectedHPCOptimized    bool
-		expectedPlacementGroup  bool
-		expectedInstanceTypes   []string
+		name                   string
+		job                    *types.SlurmJob
+		expectedMPI            bool
+		expectedEFARequired    bool
+		expectedEFAPreferred   bool
+		expectedHPCOptimized   bool
+		expectedPlacementGroup bool
+		expectedInstanceTypes  []string
 	}{
 		{
 			name: "large_scale_gromacs",
 			job: &types.SlurmJob{
-				JobID:   "test-gromacs-001",
-				Name:    "gromacs-protein-fold",
-				Script:  "#!/bin/bash\n#SBATCH --constraint=efa-required\nmpirun -np 128 gmx_mpi mdrun -deffnm production",
+				JobID:  "test-gromacs-001",
+				Name:   "gromacs-protein-fold",
+				Script: "#!/bin/bash\n#SBATCH --constraint=efa-required\nmpirun -np 128 gmx_mpi mdrun -deffnm production",
 				Resources: types.ResourceSpec{
 					Nodes:       16,
 					CPUsPerNode: 8,
@@ -66,9 +68,9 @@ func TestMPIIntegration(t *testing.T) {
 		{
 			name: "medium_scale_lammps",
 			job: &types.SlurmJob{
-				JobID:   "test-lammps-001",
-				Name:    "lammps-molecular-dynamics",
-				Script:  "#!/bin/bash\nmpirun -np 32 lmp_mpi < input.lammps",
+				JobID:  "test-lammps-001",
+				Name:   "lammps-molecular-dynamics",
+				Script: "#!/bin/bash\nmpirun -np 32 lmp_mpi < input.lammps",
 				Resources: types.ResourceSpec{
 					Nodes:       4,
 					CPUsPerNode: 8,
@@ -85,9 +87,9 @@ func TestMPIIntegration(t *testing.T) {
 		{
 			name: "gpu_ml_workload",
 			job: &types.SlurmJob{
-				JobID:   "test-ml-001",
-				Name:    "pytorch-distributed-training",
-				Script:  "#!/bin/bash\ntorchrun --nproc_per_node=4 train.py",
+				JobID:  "test-ml-001",
+				Name:   "pytorch-distributed-training",
+				Script: "#!/bin/bash\ntorchrun --nproc_per_node=4 train.py",
 				Resources: types.ResourceSpec{
 					Nodes:       2,
 					CPUsPerNode: 8,
@@ -106,9 +108,9 @@ func TestMPIIntegration(t *testing.T) {
 		{
 			name: "embarrassingly_parallel",
 			job: &types.SlurmJob{
-				JobID:   "test-parallel-001",
-				Name:    "parameter-sweep",
-				Script:  "#!/bin/bash\n./run_simulation.sh $SLURM_ARRAY_TASK_ID",
+				JobID:  "test-parallel-001",
+				Name:   "parameter-sweep",
+				Script: "#!/bin/bash\n./run_simulation.sh $SLURM_ARRAY_TASK_ID",
 				Resources: types.ResourceSpec{
 					Nodes:       8,
 					CPUsPerNode: 4,
@@ -231,9 +233,9 @@ func TestPerformanceScaling(t *testing.T) {
 
 	// Create a large-scale job
 	job := &types.SlurmJob{
-		JobID:   "perf-test-001",
-		Name:    "large-scale-simulation",
-		Script:  "#!/bin/bash\n#SBATCH --ntasks=1024\nmpirun -np 1024 ./large_simulation",
+		JobID:  "perf-test-001",
+		Name:   "large-scale-simulation",
+		Script: "#!/bin/bash\n#SBATCH --ntasks=1024\nmpirun -np 1024 ./large_simulation",
 		Resources: types.ResourceSpec{
 			Nodes:       64,
 			CPUsPerNode: 16,
@@ -366,8 +368,3 @@ g16 -p=64 -m=1024GB input.com`,
 		})
 	}
 }
-
-import (
-	"fmt"
-	"strings"
-)

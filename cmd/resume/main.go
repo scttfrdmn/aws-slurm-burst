@@ -18,10 +18,10 @@ import (
 )
 
 var (
-	configFile string
+	configFile  string
 	jobMetadata string
-	dryRun     bool
-	logger     *zap.Logger
+	dryRun      bool
+	logger      *zap.Logger
 )
 
 func main() {
@@ -206,9 +206,9 @@ func groupNodesByPartition(nodes []string) map[string]map[string][]string {
 			continue
 		}
 
-		partition := parts[0]          // "aws"
-		nodeGroup := parts[1]          // "gpu" or "cpu"
-		nodeId := parts[2]             // "001"
+		partition := parts[0] // "aws"
+		nodeGroup := parts[1] // "gpu" or "cpu"
+		nodeId := parts[2]    // "001"
 
 		if result[partition] == nil {
 			result[partition] = make(map[string][]string)
@@ -227,7 +227,7 @@ func createDefaultJob(partition, nodeGroup string, nodeIds []string) *types.Slur
 		NodeList:  nodeIds,
 		Resources: types.ResourceSpec{
 			Nodes:       len(nodeIds),
-			CPUsPerNode: 4, // Default
+			CPUsPerNode: 4,    // Default
 			MemoryMB:    8192, // Default
 		},
 		Constraints: types.JobConstraints{},

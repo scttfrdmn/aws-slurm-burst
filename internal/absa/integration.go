@@ -14,9 +14,9 @@ import (
 
 // ABSAClient handles integration with aws-slurm-burst-advisor
 type ABSAClient struct {
-	logger       *zap.Logger
-	absaCommand  string // Path to absa command
-	configPath   string // Path to ABSA configuration
+	logger      *zap.Logger
+	absaCommand string // Path to absa command
+	configPath  string // Path to ABSA configuration
 }
 
 // NewABSAClient creates a new ABSA integration client

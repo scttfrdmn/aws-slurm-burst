@@ -86,10 +86,10 @@ func (m *MPIScheduler) calculateMPIProcesses(job *types.SlurmJob) {
 // DetermineInstanceRequirements analyzes an MPI job to determine optimal instance requirements
 func (m *MPIScheduler) DetermineInstanceRequirements(job *types.SlurmJob) *types.InstanceRequirements {
 	req := &types.InstanceRequirements{
-		MinCPUs:     job.Resources.CPUsPerNode,
-		MinMemoryMB: job.Resources.MemoryMB,
-		GPUs:        job.Resources.GPUs,
-		GPUType:     job.Resources.GPUType,
+		MinCPUs:         job.Resources.CPUsPerNode,
+		MinMemoryMB:     job.Resources.MemoryMB,
+		GPUs:            job.Resources.GPUs,
+		GPUType:         job.Resources.GPUType,
 		NetworkTopology: job.MPITopology,
 	}
 
@@ -347,15 +347,15 @@ type ApplicationDetector struct{}
 func (a *ApplicationDetector) Name() string { return "application" }
 
 var mpiApplications = map[string]float64{
-	"gromacs":     float64(ConfidenceHigh),
-	"lammps":      float64(ConfidenceHigh),
-	"namd":        float64(ConfidenceHigh),
-	"quantum":     float64(ConfidenceHigh),
-	"espresso":    float64(ConfidenceHigh),
-	"abinit":      float64(ConfidenceHigh),
-	"vasp":        float64(ConfidenceHigh),
-	"amber":       float64(ConfidenceMedium),
-	"blast":       float64(ConfidenceLow),
+	"gromacs":  float64(ConfidenceHigh),
+	"lammps":   float64(ConfidenceHigh),
+	"namd":     float64(ConfidenceHigh),
+	"quantum":  float64(ConfidenceHigh),
+	"espresso": float64(ConfidenceHigh),
+	"abinit":   float64(ConfidenceHigh),
+	"vasp":     float64(ConfidenceHigh),
+	"amber":    float64(ConfidenceMedium),
+	"blast":    float64(ConfidenceLow),
 }
 
 func (a *ApplicationDetector) Detect(job *types.SlurmJob) (bool, float64) {

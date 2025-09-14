@@ -25,6 +25,16 @@ repos:
       - id: go-unit-tests
       - id: golangci-lint
 
+  # Go Report Card specific checks
+  - repo: local
+    hooks:
+      - id: go-reportcard
+        name: go reportcard checks
+        entry: make reportcard
+        language: system
+        pass_filenames: false
+        files: \.go$
+
   # Security scanning
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.4.0

@@ -12,10 +12,10 @@ import (
 
 // Config represents the complete application configuration
 type Config struct {
-	AWS    AWSConfig    `mapstructure:"aws"`
-	Slurm  SlurmConfig  `mapstructure:"slurm"`
-	ABSA   ABSAConfig   `mapstructure:"absa"`
-	MPI    MPIConfig    `mapstructure:"mpi"`
+	AWS     AWSConfig     `mapstructure:"aws"`
+	Slurm   SlurmConfig   `mapstructure:"slurm"`
+	ABSA    ABSAConfig    `mapstructure:"absa"`
+	MPI     MPIConfig     `mapstructure:"mpi"`
 	Logging LoggingConfig `mapstructure:"logging"`
 }
 
@@ -44,24 +44,24 @@ type SlurmConfig struct {
 
 // PartitionConfig defines Slurm partition configuration
 type PartitionConfig struct {
-	PartitionName    string              `mapstructure:"partition_name"`
-	NodeGroups       []NodeGroupConfig   `mapstructure:"node_groups"`
-	PartitionOptions map[string]string   `mapstructure:"partition_options"`
+	PartitionName    string            `mapstructure:"partition_name"`
+	NodeGroups       []NodeGroupConfig `mapstructure:"node_groups"`
+	PartitionOptions map[string]string `mapstructure:"partition_options"`
 }
 
 // NodeGroupConfig defines node group configuration within a partition
 type NodeGroupConfig struct {
-	NodeGroupName             string                    `mapstructure:"node_group_name"`
-	MaxNodes                  int                       `mapstructure:"max_nodes"`
-	Region                    string                    `mapstructure:"region"`
-	SlurmSpecifications       map[string]string         `mapstructure:"slurm_specifications"`
-	PurchasingOption          string                    `mapstructure:"purchasing_option"` // "spot" or "on-demand"
-	OnDemandOptions           map[string]interface{}    `mapstructure:"on_demand_options"`
-	SpotOptions               map[string]interface{}    `mapstructure:"spot_options"`
-	LaunchTemplateSpec        LaunchTemplateSpec        `mapstructure:"launch_template_specification"`
-	LaunchTemplateOverrides   []LaunchTemplateOverride  `mapstructure:"launch_template_overrides"`
-	SubnetIds                 []string                  `mapstructure:"subnet_ids"`
-	Tags                      []AWSTag                  `mapstructure:"tags"`
+	NodeGroupName           string                   `mapstructure:"node_group_name"`
+	MaxNodes                int                      `mapstructure:"max_nodes"`
+	Region                  string                   `mapstructure:"region"`
+	SlurmSpecifications     map[string]string        `mapstructure:"slurm_specifications"`
+	PurchasingOption        string                   `mapstructure:"purchasing_option"` // "spot" or "on-demand"
+	OnDemandOptions         map[string]interface{}   `mapstructure:"on_demand_options"`
+	SpotOptions             map[string]interface{}   `mapstructure:"spot_options"`
+	LaunchTemplateSpec      LaunchTemplateSpec       `mapstructure:"launch_template_specification"`
+	LaunchTemplateOverrides []LaunchTemplateOverride `mapstructure:"launch_template_overrides"`
+	SubnetIds               []string                 `mapstructure:"subnet_ids"`
+	Tags                    []AWSTag                 `mapstructure:"tags"`
 }
 
 // LaunchTemplateSpec defines EC2 launch template specification
@@ -95,11 +95,11 @@ type ABSAConfig struct {
 
 // MPIConfig contains MPI-specific configuration
 type MPIConfig struct {
-	EFADefault                 string `mapstructure:"efa_default"` // "required", "preferred", "optional", "disabled"
-	HPCInstancesThreshold      int    `mapstructure:"hpc_instances_threshold"`
-	PlacementGroupThreshold    int    `mapstructure:"placement_group_threshold"`
-	ForceClusterPG             bool   `mapstructure:"force_cluster_placement_group"`
-	EnableEnhancedNetworking   bool   `mapstructure:"enable_enhanced_networking"`
+	EFADefault               string `mapstructure:"efa_default"` // "required", "preferred", "optional", "disabled"
+	HPCInstancesThreshold    int    `mapstructure:"hpc_instances_threshold"`
+	PlacementGroupThreshold  int    `mapstructure:"placement_group_threshold"`
+	ForceClusterPG           bool   `mapstructure:"force_cluster_placement_group"`
+	EnableEnhancedNetworking bool   `mapstructure:"enable_enhanced_networking"`
 }
 
 // LoggingConfig contains logging configuration
@@ -178,73 +178,93 @@ func setDefaults() {
 
 // validate performs comprehensive configuration validation following original plugin patterns
 func validate(config *Config) error {
-	// Validate AWS configuration
-	if config.AWS.Region == "" {
+	if err := validateAWS(&config.AWS); err != nil {
+		return err
+	}
+	if err := validateSlurm(&config.Slurm); err != nil {
+		return err
+	}
+	if err := validateMPI(&config.MPI); err != nil {
+		return err
+	}
+	if err := validateLogging(&config.Logging); err != nil {
+		return err
+	}
+	return nil
+}
+
+// validateAWS validates AWS configuration
+func validateAWS(aws *AWSConfig) error {
+	if aws.Region == "" {
 		return fmt.Errorf("aws.region is required")
 	}
+	return nil
+}
 
-	// Validate Slurm configuration (following original plugin validation logic)
-	if config.Slurm.BinPath == "" {
+// validateSlurm validates Slurm configuration
+func validateSlurm(slurm *SlurmConfig) error {
+	if slurm.BinPath == "" {
 		return fmt.Errorf("slurm.bin_path is required")
 	}
-
-	if config.Slurm.PrivateData != "CLOUD" {
+	if slurm.PrivateData != "CLOUD" {
 		return fmt.Errorf("slurm.private_data must be 'CLOUD' for power save nodes to be visible")
 	}
+	if err := validateSlurmRates(slurm); err != nil {
+		return err
+	}
+	return validatePartitions(slurm.Partitions)
+}
 
-	if config.Slurm.ResumeRate <= 0 || config.Slurm.ResumeRate > 1000 {
+// validateSlurmRates validates Slurm rate configurations
+func validateSlurmRates(slurm *SlurmConfig) error {
+	if slurm.ResumeRate <= 0 || slurm.ResumeRate > 1000 {
 		return fmt.Errorf("slurm.resume_rate must be between 1 and 1000")
 	}
-
-	if config.Slurm.SuspendRate <= 0 || config.Slurm.SuspendRate > 1000 {
+	if slurm.SuspendRate <= 0 || slurm.SuspendRate > 1000 {
 		return fmt.Errorf("slurm.suspend_rate must be between 1 and 1000")
 	}
-
-	if config.Slurm.ResumeTimeout <= 0 {
+	if slurm.ResumeTimeout <= 0 {
 		return fmt.Errorf("slurm.resume_timeout must be positive")
 	}
-
-	if config.Slurm.SuspendTime <= 0 {
+	if slurm.SuspendTime <= 0 {
 		return fmt.Errorf("slurm.suspend_time must be positive")
 	}
+	return nil
+}
 
-	// Validate partitions following original plugin structure
-	if len(config.Slurm.Partitions) == 0 {
+// validatePartitions validates partition configurations
+func validatePartitions(partitions []PartitionConfig) error {
+	if len(partitions) == 0 {
 		return fmt.Errorf("at least one partition must be configured")
 	}
-	for i, partition := range config.Slurm.Partitions {
+	for i, partition := range partitions {
 		if err := validatePartition(partition, i); err != nil {
 			return err
 		}
 	}
-
-	// Validate MPI configuration
-	validEFAOptions := []string{"required", "preferred", "optional", "disabled"}
-	validEFA := false
-	for _, option := range validEFAOptions {
-		if config.MPI.EFADefault == option {
-			validEFA = true
-			break
-		}
-	}
-	if !validEFA {
-		return fmt.Errorf("mpi.efa_default must be one of: %s", strings.Join(validEFAOptions, ", "))
-	}
-
-	// Validate logging configuration
-	validLogLevels := []string{"debug", "info", "warn", "error", "fatal"}
-	validLevel := false
-	for _, level := range validLogLevels {
-		if config.Logging.Level == level {
-			validLevel = true
-			break
-		}
-	}
-	if !validLevel {
-		return fmt.Errorf("logging.level must be one of: %s", strings.Join(validLogLevels, ", "))
-	}
-
 	return nil
+}
+
+// validateMPI validates MPI configuration
+func validateMPI(mpi *MPIConfig) error {
+	validEFAOptions := []string{"required", "preferred", "optional", "disabled"}
+	for _, option := range validEFAOptions {
+		if mpi.EFADefault == option {
+			return nil
+		}
+	}
+	return fmt.Errorf("mpi.efa_default must be one of: %s", strings.Join(validEFAOptions, ", "))
+}
+
+// validateLogging validates logging configuration
+func validateLogging(logging *LoggingConfig) error {
+	validLogLevels := []string{"debug", "info", "warn", "error", "fatal"}
+	for _, level := range validLogLevels {
+		if logging.Level == level {
+			return nil
+		}
+	}
+	return fmt.Errorf("logging.level must be one of: %s", strings.Join(validLogLevels, ", "))
 }
 
 // validatePartition validates partition configuration following original plugin patterns

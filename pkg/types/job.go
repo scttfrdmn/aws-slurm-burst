@@ -16,23 +16,23 @@ type SlurmJob struct {
 	Environment map[string]string `json:"environment,omitempty"`
 
 	// MPI-specific fields
-	IsMPIJob      bool           `json:"is_mpi_job"`
-	MPIProcesses  int            `json:"mpi_processes,omitempty"`
-	MPITopology   NetworkTopology `json:"mpi_topology,omitempty"`
+	IsMPIJob     bool            `json:"is_mpi_job"`
+	MPIProcesses int             `json:"mpi_processes,omitempty"`
+	MPITopology  NetworkTopology `json:"mpi_topology,omitempty"`
 
 	// Timing
-	SubmitTime    time.Time `json:"submit_time"`
-	StartTime     *time.Time `json:"start_time,omitempty"`
-	TimeLimit     Duration  `json:"time_limit"`
+	SubmitTime time.Time  `json:"submit_time"`
+	StartTime  *time.Time `json:"start_time,omitempty"`
+	TimeLimit  Duration   `json:"time_limit"`
 }
 
 type ResourceSpec struct {
-	Nodes         int     `json:"nodes"`
-	CPUsPerNode   int     `json:"cpus_per_node"`
-	MemoryMB      int     `json:"memory_mb"`
-	GPUs          int     `json:"gpus,omitempty"`
-	GPUType       string  `json:"gpu_type,omitempty"`
-	LocalStorage  int     `json:"local_storage_gb,omitempty"`
+	Nodes        int    `json:"nodes"`
+	CPUsPerNode  int    `json:"cpus_per_node"`
+	MemoryMB     int    `json:"memory_mb"`
+	GPUs         int    `json:"gpus,omitempty"`
+	GPUType      string `json:"gpu_type,omitempty"`
+	LocalStorage int    `json:"local_storage_gb,omitempty"`
 }
 
 type JobConstraints struct {
@@ -46,20 +46,20 @@ type JobConstraints struct {
 type NetworkTopology string
 
 const (
-	TopologyCluster   NetworkTopology = "cluster"    // Cluster placement group
-	TopologySpread    NetworkTopology = "spread"     // Spread across AZs
-	TopologyPartition NetworkTopology = "partition"  // Partition placement group
-	TopologyAny       NetworkTopology = "any"        // No specific requirements
+	TopologyCluster   NetworkTopology = "cluster"   // Cluster placement group
+	TopologySpread    NetworkTopology = "spread"    // Spread across AZs
+	TopologyPartition NetworkTopology = "partition" // Partition placement group
+	TopologyAny       NetworkTopology = "any"       // No specific requirements
 )
 
 // ABSADecision represents decision data from aws-slurm-burst-advisor
 type ABSADecision struct {
-	ShouldBurst       bool            `json:"should_burst"`
-	RecommendedAction string          `json:"recommended_action"`
-	CostAnalysis      CostAnalysis    `json:"cost_analysis"`
+	ShouldBurst       bool             `json:"should_burst"`
+	RecommendedAction string           `json:"recommended_action"`
+	CostAnalysis      CostAnalysis     `json:"cost_analysis"`
 	PerformanceModel  PerformanceModel `json:"performance_model"`
-	Confidence        float64         `json:"confidence"`
-	DecisionFactors   []string        `json:"decision_factors"`
+	Confidence        float64          `json:"confidence"`
+	DecisionFactors   []string         `json:"decision_factors"`
 }
 
 type CostAnalysis struct {

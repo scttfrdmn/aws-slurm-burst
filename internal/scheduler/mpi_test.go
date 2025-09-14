@@ -24,9 +24,9 @@ func TestMPIScheduler_AnalyzeJob(t *testing.T) {
 		{
 			name: "mpirun in script",
 			job: &types.SlurmJob{
-				JobID:   "test1",
-				Name:    "test-job",
-				Script:  "#!/bin/bash\nmpirun -np 8 ./myapp",
+				JobID:  "test1",
+				Name:   "test-job",
+				Script: "#!/bin/bash\nmpirun -np 8 ./myapp",
 				Resources: types.ResourceSpec{
 					Nodes:       2,
 					CPUsPerNode: 4,
@@ -38,9 +38,9 @@ func TestMPIScheduler_AnalyzeJob(t *testing.T) {
 		{
 			name: "GROMACS application",
 			job: &types.SlurmJob{
-				JobID:   "test2",
-				Name:    "gromacs-simulation",
-				Script:  "#!/bin/bash\ngmx_mpi mdrun -deffnm prod",
+				JobID:  "test2",
+				Name:   "gromacs-simulation",
+				Script: "#!/bin/bash\ngmx_mpi mdrun -deffnm prod",
 				Resources: types.ResourceSpec{
 					Nodes:       4,
 					CPUsPerNode: 8,
@@ -52,9 +52,9 @@ func TestMPIScheduler_AnalyzeJob(t *testing.T) {
 		{
 			name: "large scale MPI",
 			job: &types.SlurmJob{
-				JobID:   "test3",
-				Name:    "large-mpi",
-				Script:  "#!/bin/bash\nmpiexec -n 128 ./app",
+				JobID:  "test3",
+				Name:   "large-mpi",
+				Script: "#!/bin/bash\nmpiexec -n 128 ./app",
 				Resources: types.ResourceSpec{
 					Nodes:       16,
 					CPUsPerNode: 8,
@@ -66,9 +66,9 @@ func TestMPIScheduler_AnalyzeJob(t *testing.T) {
 		{
 			name: "non-MPI job",
 			job: &types.SlurmJob{
-				JobID:   "test4",
-				Name:    "single-thread",
-				Script:  "#!/bin/bash\n./sequential_app",
+				JobID:  "test4",
+				Name:   "single-thread",
+				Script: "#!/bin/bash\n./sequential_app",
 				Resources: types.ResourceSpec{
 					Nodes:       1,
 					CPUsPerNode: 4,
@@ -80,9 +80,9 @@ func TestMPIScheduler_AnalyzeJob(t *testing.T) {
 		{
 			name: "EFA explicitly disabled",
 			job: &types.SlurmJob{
-				JobID:   "test5",
-				Name:    "mpi-no-efa",
-				Script:  "#!/bin/bash\nmpirun -np 8 ./myapp",
+				JobID:  "test5",
+				Name:   "mpi-no-efa",
+				Script: "#!/bin/bash\nmpirun -np 8 ./myapp",
 				Resources: types.ResourceSpec{
 					Nodes:       2,
 					CPUsPerNode: 4,
@@ -125,10 +125,10 @@ func TestTaskCountDetector(t *testing.T) {
 	detector := &TaskCountDetector{}
 
 	tests := []struct {
-		name           string
-		job            *types.SlurmJob
-		expectedMPI    bool
-		expectedConf   float64
+		name         string
+		job          *types.SlurmJob
+		expectedMPI  bool
+		expectedConf float64
 	}{
 		{
 			name: "more tasks than nodes",
@@ -348,9 +348,9 @@ func BenchmarkMPIAnalysis(b *testing.B) {
 	ctx := context.Background()
 
 	job := &types.SlurmJob{
-		JobID:   "benchmark",
-		Name:    "gromacs-md",
-		Script:  "#!/bin/bash\n#SBATCH --ntasks=32\nmpirun -np 32 gmx_mpi mdrun -deffnm prod",
+		JobID:  "benchmark",
+		Name:   "gromacs-md",
+		Script: "#!/bin/bash\n#SBATCH --ntasks=32\nmpirun -np 32 gmx_mpi mdrun -deffnm prod",
 		Resources: types.ResourceSpec{
 			Nodes:       4,
 			CPUsPerNode: 8,

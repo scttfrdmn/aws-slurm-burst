@@ -176,9 +176,15 @@ func (c *Client) parseJobScript(job *types.SlurmJob) {
 		return
 	}
 
-	script := strings.ToLower(job.Script)
-
 	// Parse SBATCH directives
+	c.parseSBatchDirectives(job)
+
+	// Check for MPI indicators in script content
+	c.checkMPIIndicators(job)
+}
+
+// parseSBatchDirectives parses SBATCH directives from the job script
+func (c *Client) parseSBatchDirectives(job *types.SlurmJob) {
 	sbatchPattern := regexp.MustCompile(`#SBATCH\s+--([a-zA-Z-]+)(?:[=\s]+([^\s]+))?`)
 	matches := sbatchPattern.FindAllStringSubmatch(job.Script, -1)
 
@@ -193,39 +199,54 @@ func (c *Client) parseJobScript(job *types.SlurmJob) {
 			value = match[2]
 		}
 
-		switch directive {
-		case "constraint", "C":
-			if value != "" {
-				job.Constraints.Features = strings.Split(value, "&")
-			}
-		case "exclude":
-			if value != "" {
-				job.Constraints.ExcludeNodes = strings.Split(value, ",")
-			}
-		case "mem", "mem-per-node":
-			if memory := c.parseMemory(value); memory > 0 {
-				job.Resources.MemoryMB = memory
-			}
-		case "gres":
-			if strings.Contains(value, "gpu") {
-				parts := strings.Split(value, ":")
-				if len(parts) >= 2 {
-					if gpus, err := strconv.Atoi(parts[len(parts)-1]); err == nil {
-						job.Resources.GPUs = gpus
-					}
-				}
-				if len(parts) >= 3 {
-					job.Resources.GPUType = parts[1]
-				}
-			}
-		case "time":
-			if duration, err := c.parseDuration(value); err == nil {
-				job.TimeLimit = types.Duration(duration)
-			}
+		c.processSBatchDirective(job, directive, value)
+	}
+}
+
+// processSBatchDirective processes a single SBATCH directive
+func (c *Client) processSBatchDirective(job *types.SlurmJob, directive, value string) {
+	switch directive {
+	case "constraint", "C":
+		if value != "" {
+			job.Constraints.Features = strings.Split(value, "&")
+		}
+	case "exclude":
+		if value != "" {
+			job.Constraints.ExcludeNodes = strings.Split(value, ",")
+		}
+	case "mem", "mem-per-node":
+		if memory := c.parseMemory(value); memory > 0 {
+			job.Resources.MemoryMB = memory
+		}
+	case "gres":
+		c.parseGRESDirective(job, value)
+	case "time":
+		if duration, err := c.parseDuration(value); err == nil {
+			job.TimeLimit = types.Duration(duration)
 		}
 	}
+}
 
-	// Check for MPI indicators in script content
+// parseGRESDirective parses GRES (Generic Resource) directives
+func (c *Client) parseGRESDirective(job *types.SlurmJob, value string) {
+	if !strings.Contains(value, "gpu") {
+		return
+	}
+
+	parts := strings.Split(value, ":")
+	if len(parts) >= 2 {
+		if gpus, err := strconv.Atoi(parts[len(parts)-1]); err == nil {
+			job.Resources.GPUs = gpus
+		}
+	}
+	if len(parts) >= 3 {
+		job.Resources.GPUType = parts[1]
+	}
+}
+
+// checkMPIIndicators checks for MPI indicators in the script
+func (c *Client) checkMPIIndicators(job *types.SlurmJob) {
+	script := strings.ToLower(job.Script)
 	if strings.Contains(script, "mpirun") || strings.Contains(script, "mpiexec") {
 		c.logger.Debug("MPI indicators found in job script", zap.String("job_id", job.JobID))
 	}

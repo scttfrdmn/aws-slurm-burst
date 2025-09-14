@@ -77,7 +77,27 @@ benchmark: ## Run benchmarks
 	@echo "$(GREEN)Running benchmarks...$(NC)"
 	@go test -bench=. -benchmem ./...
 
-## Quality commands
+## Quality commands (Go Report Card standards)
+reportcard: ## Run Go Report Card checks for A grade
+	@echo "$(GREEN)Running Go Report Card checks...$(NC)"
+	@echo "Checking gofmt..."
+	@test -z "$$(gofmt -l .)" || (echo "$(RED)gofmt issues found:$(NC)" && gofmt -l . && exit 1)
+	@echo "Checking go vet..."
+	@go vet ./...
+	@echo "Checking gocyclo..."
+	@test -z "$$(gocyclo -over 15 .)" || (echo "$(RED)Cyclomatic complexity > 15:$(NC)" && gocyclo -over 15 . && exit 1)
+	@echo "Checking misspell..."
+	@misspell -error .
+	@echo "Checking ineffassign..."
+	@ineffassign ./...
+	@echo "$(GREEN)All Go Report Card checks passed!$(NC)"
+
+install-reportcard-tools: ## Install Go Report Card tools
+	@echo "$(GREEN)Installing Go Report Card tools...$(NC)"
+	@go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
+	@go install github.com/client9/misspell/cmd/misspell@latest
+	@go install github.com/gordonklaus/ineffassign@latest
+
 lint: ## Run linter
 	@echo "$(GREEN)Running linters...$(NC)"
 	@golangci-lint run
@@ -165,7 +185,8 @@ tag-release: ## Tag a new release (VERSION=x.y.z make tag-release)
 ci: ## Run CI pipeline locally
 	@echo "$(GREEN)Running CI pipeline...$(NC)"
 	@make deps
-	@make lint
+	@make install-reportcard-tools
+	@make reportcard
 	@make test-coverage-ci
 	@make security
 	@make build
