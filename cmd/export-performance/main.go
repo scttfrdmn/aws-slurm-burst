@@ -116,11 +116,11 @@ func collectPerformanceData(ctx context.Context, slurmClient *slurm.Client, jobI
 	// Build performance feedback structure
 	perfData := &types.PerformanceFeedback{
 		JobMetadata: types.JobMetadata{
-			JobID:       jobID,
-			JobName:     jobInfo.JobName,
-			UserID:      jobInfo.UserID,
-			ProjectID:   jobInfo.Account,
-			Partition:   jobInfo.Partition,
+			JobID:     jobID,
+			JobName:   jobInfo.JobName,
+			UserID:    jobInfo.UserID,
+			ProjectID: jobInfo.Account,
+			Partition: jobInfo.Partition,
 			ActualExecution: types.ActualExecution{
 				InstanceTypesUsed: parseInstanceTypesFromComment(jobInfo.Comment),
 				ActualCostUSD:     parseActualCostFromComment(jobInfo.Comment),
@@ -131,7 +131,7 @@ func collectPerformanceData(ctx context.Context, slurmClient *slurm.Client, jobI
 				EndTime:           jobInfo.End,
 			},
 		},
-		PredictionValidation: calculatePredictionAccuracy(jobInfo),
+		PredictionValidation:  calculatePredictionAccuracy(jobInfo),
 		AWSPerformanceMetrics: collectAWSMetrics(ctx, jobInfo),
 		CostAnalysis:          analyzeCosts(jobInfo),
 		ExecutionContext: types.ExecutionContext{
@@ -254,11 +254,11 @@ func isMPIJob(jobInfo *JobAccountingInfo) bool {
 func collectMPIMetrics(ctx context.Context, jobInfo *JobAccountingInfo) (*types.MPIOptimizationResults, error) {
 	// Collect MPI-specific performance metrics
 	return &types.MPIOptimizationResults{
-		CommunicationOverhead:   0.12,
-		ScalingEfficiency:       0.87,
-		LoadBalance:            0.93,
-		MPICollectiveEfficiency: 0.91,
-		CommunicationPattern:    "nearest_neighbor",
+		CommunicationOverhead:    0.12,
+		ScalingEfficiency:        0.87,
+		LoadBalance:              0.93,
+		MPICollectiveEfficiency:  0.91,
+		CommunicationPattern:     "nearest_neighbor",
 		SynchronizationFrequency: 2.5,
 	}, nil
 }
