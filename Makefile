@@ -29,6 +29,7 @@ build: ## Build all binaries
 	@go build $(LDFLAGS) -o $(BUILD_DIR)/suspend ./cmd/suspend
 	@go build $(LDFLAGS) -o $(BUILD_DIR)/state-manager ./cmd/state-manager
 	@go build $(LDFLAGS) -o $(BUILD_DIR)/validate ./cmd/validate
+	@go build $(LDFLAGS) -o $(BUILD_DIR)/export-performance ./cmd/export-performance
 	@echo "$(GREEN)Build completed successfully$(NC)"
 
 build-all-platforms: ## Build for multiple platforms
@@ -46,6 +47,9 @@ install: build ## Install binaries to system
 	@sudo cp $(BUILD_DIR)/suspend /usr/local/bin/$(BINARY_NAME)-suspend
 	@sudo cp $(BUILD_DIR)/state-manager /usr/local/bin/$(BINARY_NAME)-state-manager
 	@sudo cp $(BUILD_DIR)/validate /usr/local/bin/$(BINARY_NAME)-validate
+	@sudo cp $(BUILD_DIR)/export-performance /usr/local/bin/$(BINARY_NAME)-export-performance
+	@sudo cp scripts/slurm-epilog-aws.sh /usr/local/bin/slurm-epilog-aws-burst.sh
+	@sudo chmod +x /usr/local/bin/slurm-epilog-aws-burst.sh
 	@echo "$(GREEN)Installation completed$(NC)"
 
 ## Development commands
