@@ -1,0 +1,94 @@
+repos:
+  # General hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: ['--unsafe']
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: debug-statements
+      - id: check-executables-have-shebangs
+
+  # Go-specific hooks
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: v0.5.1
+    hooks:
+      - id: go-fmt
+      - id: go-imports
+      - id: go-vet-mod
+      - id: go-mod-tidy
+      - id: go-unit-tests
+      - id: golangci-lint
+
+  # Security scanning
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: go.sum
+
+  # Go vulnerability check
+  - repo: local
+    hooks:
+      - id: govulncheck
+        name: govulncheck
+        entry: govulncheck
+        language: system
+        pass_filenames: false
+        args: ['./...']
+
+  # Test coverage check
+  - repo: local
+    hooks:
+      - id: test-coverage
+        name: test coverage
+        entry: bash -c 'make test-coverage-ci && go tool cover -func=coverage/coverage.out | tail -1 | awk "{print \$3}" | sed "s/%//" | awk "{if(\$1<80) {print \"Coverage \"\$1\"% is below 80%\"; exit 1}}"'
+        language: system
+        pass_filenames: false
+        files: \.go$
+
+  # Commit message validation
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.0.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [build, chore, ci, docs, feat, fix, perf, refactor, revert, style, test]
+
+  # Dockerfile linting
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint-docker
+        args: [--ignore, DL3008, --ignore, DL3009]
+
+  # Markdown linting
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.37.0
+    hooks:
+      - id: markdownlint
+        args: [--fix]
+
+  # YAML formatting
+  - repo: https://github.com/google/yamlfmt
+    rev: v0.10.0
+    hooks:
+      - id: yamlfmt
+
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false
