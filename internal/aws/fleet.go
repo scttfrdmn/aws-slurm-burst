@@ -142,7 +142,11 @@ func (f *FleetManager) LaunchInstanceFleet(ctx context.Context, req *FleetReques
 
 // buildFleetRequest creates the EC2 Fleet request structure
 func (f *FleetManager) buildFleetRequest(req *FleetRequest, placementGroupName string) (*ec2.CreateFleetInput, error) {
-	instanceCount := int32(len(req.NodeIds))
+	nodeCount := len(req.NodeIds)
+	if nodeCount > 10000 { // Reasonable limit for Slurm node count
+		return nil, fmt.Errorf("node count %d exceeds maximum supported (10000)", nodeCount)
+	}
+	instanceCount := int32(nodeCount)
 
 	// Build launch template configuration
 	launchTemplateConfig := types.FleetLaunchTemplateConfigRequest{

@@ -21,7 +21,11 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
 		os.Exit(1)
 	}
-	defer logger.Sync()
+	defer func() {
+		if syncErr := logger.Sync(); syncErr != nil {
+			fmt.Printf("Warning: failed to sync logger: %v\n", syncErr)
+		}
+	}()
 
 	rootCmd := &cobra.Command{
 		Use:   "aws-slurm-burst-validate",

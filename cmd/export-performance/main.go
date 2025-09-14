@@ -32,8 +32,8 @@ func main() {
 		os.Exit(1)
 	}
 	defer func() {
-		if err := logger.Sync(); err != nil {
-			fmt.Printf("Warning: failed to sync logger: %v\n", err)
+		if syncErr := logger.Sync(); syncErr != nil {
+			fmt.Printf("Warning: failed to sync logger: %v\n", syncErr)
 		}
 	}()
 
