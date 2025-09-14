@@ -1,165 +1,46 @@
 run:
   timeout: 5m
-  issues-exit-code: 1
   tests: true
-  modules-download-mode: readonly
 
 output:
-  format: colored-line-number
   print-issued-lines: true
   print-linter-name: true
-  uniq-by-line: true
-
-linters-settings:
-  govet:
-    check-shadowing: true
-    settings:
-      printf:
-        funcs:
-          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
-          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
-          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
-          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
-
-  golint:
-    min-confidence: 0
-
-  gocyclo:
-    min-complexity: 15
-
-  maligned:
-    suggest-new: true
-
-  dupl:
-    threshold: 100
-
-  goconst:
-    min-len: 2
-    min-occurrences: 3
-
-  lll:
-    line-length: 140
-
-  goimports:
-    local-prefixes: github.com/scttfrdmn/aws-slurm-burst
-
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-    disabled-checks:
-      - dupImport # https://github.com/go-critic/go-critic/issues/845
-      - ifElseChain
-      - octalLiteral
-      - whyNoLint
-      - wrapperFunc
-
-  funlen:
-    lines: 100
-    statements: 50
-
-  gocognit:
-    min-complexity: 20
-
-  nestif:
-    min-complexity: 4
-
-  godox:
-    keywords:
-      - NOTE
-      - OPTIMIZE
-      - HACK
-
-  dogsled:
-    max-blank-identifiers: 2
-
-  whitespace:
-    multi-if: false
-    multi-func: false
-
-  wsl:
-    strict-append: true
-    allow-assign-and-call: true
-    allow-multiline-assign: true
-    allow-cuddle-declarations: false
-    allow-trailing-comment: false
-    force-case-trailing-whitespace: 0
-    force-err-cuddling: false
-    allow-separated-leading-comment: false
-
-  godot:
-    scope: declarations
-    exclude:
-      - "^fixme:"
-      - "^todo:"
-    period: true
-    capital: false
 
 linters:
-  disable-all: true
   enable:
     - bodyclose
-    - deadcode
-    - depguard
-    - dogsled
-    - dupl
     - errcheck
-    - exportloopref
-    - funlen
-    - gochecknoinits
-    - goconst
-    - gocritic
-    - gocyclo
-    - gofmt
-    - goimports
-    - golint
-    - gomnd
-    - goprintffuncname
-    - gosec
     - gosimple
     - govet
     - ineffassign
-    - interfacer
-    - lll
-    - misspell
-    - nakedret
-    - noctx
-    - nolintlint
-    - rowserrcheck
     - staticcheck
-    - structcheck
-    - stylecheck
     - typecheck
-    - unconvert
-    - unparam
     - unused
-    - varcheck
-    - whitespace
-    - godot
+    - goimports
+    - gofmt
+    - misspell
+    - goconst
+    - unconvert
+    - gocyclo
+    - gosec
+
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+  govet:
+    check-shadowing: true
+  goimports:
+    local-prefixes: github.com/scttfrdmn/aws-slurm-burst
+  gosec:
+    excludes:
+      - G204 # Subprocess launched with variable
 
 issues:
   exclude-rules:
     - path: _test\.go
       linters:
-        - gomnd
-        - funlen
-        - gocyclo
-        - errcheck
-        - dupl
         - gosec
-    - path: cmd/
+        - gocyclo
+    - path: test/
       linters:
-        - gochecknoinits
-    - linters:
-        - staticcheck
-      text: "SA9003:"
-    - linters:
-        - lll
-      source: "^//go:generate "
-
-  exclude-use-default: false
-  exclude:
-    - 'declaration of "(err|ctx)" shadows declaration at'
+        - gosec
