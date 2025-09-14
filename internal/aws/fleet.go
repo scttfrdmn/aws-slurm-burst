@@ -237,21 +237,28 @@ func (f *FleetManager) buildLaunchTemplateOverrides(req *FleetRequest, placement
 
 // selectInstanceTypes chooses optimal instance types based on job requirements
 func (f *FleetManager) selectInstanceTypes(req *burstTypes.InstanceRequirements) []string {
-	// Use instance families from requirements if specified
+	// Use instance families from requirements if specified (ASBA mode)
 	if len(req.InstanceFamilies) > 0 {
-		var instanceTypes []string
-
-		for _, family := range req.InstanceFamilies {
-			// Get instance sizes for the family based on requirements
-			sizes := f.getInstanceSizesForFamily(family, req)
-			instanceTypes = append(instanceTypes, sizes...)
-		}
-
-		return instanceTypes
+		// ASBA has already selected specific instance types, use them directly
+		return req.InstanceFamilies
 	}
 
-	// Fallback to default instance types
-	return []string{"c5.large", "c5.xlarge", "m5.large", "m5.xlarge"}
+	// Fallback instance selection for standalone mode
+	var instanceTypes []string
+
+	// Select instance types based on resource requirements
+	if req.GPUs > 0 {
+		// GPU workloads
+		instanceTypes = append(instanceTypes, "p3.2xlarge", "g4dn.xlarge")
+	} else if req.RequiresEFA {
+		// EFA-capable instances for MPI
+		instanceTypes = append(instanceTypes, "c5n.large", "c5n.xlarge", "c6i.large", "c6i.xlarge")
+	} else {
+		// General compute workloads
+		instanceTypes = append(instanceTypes, "c5.large", "c5.xlarge", "m5.large", "m5.xlarge")
+	}
+
+	return instanceTypes
 }
 
 // getInstanceSizesForFamily returns appropriate instance sizes for a family
@@ -518,8 +525,8 @@ func (f *FleetManager) findInstancesByNodeNames(ctx context.Context, nodeNames [
 
 // GetInstancePricing retrieves current pricing for instance types
 func (f *FleetManager) GetInstancePricing(ctx context.Context, instanceTypes []string) (map[string]float64, error) {
-	// TODO: Implement AWS Pricing API integration
-	// For now, return mock pricing data
+	// Note: Real AWS Pricing API integration planned for Phase 3
+	// Using realistic mock pricing for now
 	pricing := make(map[string]float64)
 
 	for _, instanceType := range instanceTypes {

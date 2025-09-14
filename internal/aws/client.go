@@ -13,6 +13,7 @@ import (
 type Client struct {
 	logger       *zap.Logger
 	config       *config.AWSConfig
+	appConfig    *config.Config
 	fleetManager *FleetManager
 }
 
@@ -32,7 +33,7 @@ type LaunchResult struct {
 }
 
 // NewClient creates a new AWS client
-func NewClient(logger *zap.Logger, awsConfig *config.AWSConfig) (*Client, error) {
+func NewClient(logger *zap.Logger, awsConfig *config.AWSConfig, appConfig *config.Config) (*Client, error) {
 	fleetManager, err := NewFleetManager(logger, awsConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create fleet manager: %w", err)
@@ -41,6 +42,7 @@ func NewClient(logger *zap.Logger, awsConfig *config.AWSConfig) (*Client, error)
 	return &Client{
 		logger:       logger,
 		config:       awsConfig,
+		appConfig:    appConfig,
 		fleetManager: fleetManager,
 	}, nil
 }
@@ -52,6 +54,12 @@ func (c *Client) LaunchInstances(ctx context.Context, req *LaunchRequest) (*Laun
 		zap.String("partition", req.Partition),
 		zap.String("node_group", req.NodeGroup))
 
+	// Find node group configuration to get AWS settings
+	nodeGroupConfig := c.findNodeGroupConfig(req.Partition, req.NodeGroup)
+	if nodeGroupConfig == nil {
+		return nil, fmt.Errorf("no configuration found for partition '%s' nodegroup '%s'", req.Partition, req.NodeGroup)
+	}
+
 	// Build fleet request from launch request
 	fleetReq := &FleetRequest{
 		NodeIds:              req.NodeIds,
@@ -60,10 +68,12 @@ func (c *Client) LaunchInstances(ctx context.Context, req *LaunchRequest) (*Laun
 		InstanceRequirements: req.InstanceRequirements,
 		Job:                  req.Job,
 		LaunchTemplate: LaunchTemplateConfig{
-			Name:    fmt.Sprintf("%s-%s-template", req.Partition, req.NodeGroup),
-			Version: "$Latest",
+			Name:    nodeGroupConfig.LaunchTemplateSpec.LaunchTemplateName,
+			ID:      nodeGroupConfig.LaunchTemplateSpec.LaunchTemplateID,
+			Version: nodeGroupConfig.LaunchTemplateSpec.Version,
 		},
-		SubnetIds: []string{"subnet-default"}, // TODO: Get from configuration
+		SubnetIds:        nodeGroupConfig.SubnetIds,
+		SecurityGroupIds: nodeGroupConfig.SecurityGroupIds,
 		Tags: map[string]string{
 			"Partition":  req.Partition,
 			"NodeGroup":  req.NodeGroup,
@@ -87,4 +97,9 @@ func (c *Client) LaunchInstances(ctx context.Context, req *LaunchRequest) (*Laun
 // TerminateInstances terminates instances for the specified node names
 func (c *Client) TerminateInstances(ctx context.Context, nodeNames []string) error {
 	return c.fleetManager.TerminateInstances(ctx, nodeNames)
+}
+
+// findNodeGroupConfig finds the configuration for a specific partition and node group
+func (c *Client) findNodeGroupConfig(partition, nodeGroup string) *config.NodeGroupConfig {
+	return c.appConfig.FindNodeGroup(partition, nodeGroup)
 }

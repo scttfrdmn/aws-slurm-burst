@@ -61,6 +61,8 @@ type NodeGroupConfig struct {
 	LaunchTemplateSpec      LaunchTemplateSpec       `mapstructure:"launch_template_specification"`
 	LaunchTemplateOverrides []LaunchTemplateOverride `mapstructure:"launch_template_overrides"`
 	SubnetIds               []string                 `mapstructure:"subnet_ids"`
+	SecurityGroupIds        []string                 `mapstructure:"security_group_ids"`
+	IAMInstanceProfile      string                   `mapstructure:"iam_instance_profile"`
 	Tags                    []AWSTag                 `mapstructure:"tags"`
 }
 

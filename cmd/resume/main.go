@@ -97,7 +97,7 @@ func resumeNodes(cmd *cobra.Command, args []string) error {
 	}
 
 	// Initialize AWS client
-	awsClient, err := aws.NewClient(logger, &cfg.AWS)
+	awsClient, err := aws.NewClient(logger, &cfg.AWS, cfg)
 	if err != nil {
 		return fmt.Errorf("failed to create AWS client: %w", err)
 	}
@@ -290,6 +290,8 @@ func generateDefaultExecutionPlan(cfg *config.Config, nodeList string) (*types.E
 			SubnetIds:          nodeGroupConfig.SubnetIds,
 			LaunchTemplateName: nodeGroupConfig.LaunchTemplateSpec.LaunchTemplateName,
 			LaunchTemplateID:   nodeGroupConfig.LaunchTemplateSpec.LaunchTemplateID,
+			SecurityGroupIds:   nodeGroupConfig.SecurityGroupIds,
+			IAMInstanceProfile: nodeGroupConfig.IAMInstanceProfile,
 		},
 		MPIConfig: types.MPIConfiguration{
 			IsMPIJob:         false, // Default to non-MPI (ASBA would detect this)

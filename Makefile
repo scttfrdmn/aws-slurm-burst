@@ -28,6 +28,7 @@ build: ## Build all binaries
 	@go build $(LDFLAGS) -o $(BUILD_DIR)/resume ./cmd/resume
 	@go build $(LDFLAGS) -o $(BUILD_DIR)/suspend ./cmd/suspend
 	@go build $(LDFLAGS) -o $(BUILD_DIR)/state-manager ./cmd/state-manager
+	@go build $(LDFLAGS) -o $(BUILD_DIR)/validate ./cmd/validate
 	@echo "$(GREEN)Build completed successfully$(NC)"
 
 build-all-platforms: ## Build for multiple platforms
@@ -44,6 +45,7 @@ install: build ## Install binaries to system
 	@sudo cp $(BUILD_DIR)/resume /usr/local/bin/$(BINARY_NAME)-resume
 	@sudo cp $(BUILD_DIR)/suspend /usr/local/bin/$(BINARY_NAME)-suspend
 	@sudo cp $(BUILD_DIR)/state-manager /usr/local/bin/$(BINARY_NAME)-state-manager
+	@sudo cp $(BUILD_DIR)/validate /usr/local/bin/$(BINARY_NAME)-validate
 	@echo "$(GREEN)Installation completed$(NC)"
 
 ## Development commands

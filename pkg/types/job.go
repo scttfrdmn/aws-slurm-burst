@@ -70,10 +70,10 @@ type CostAnalysis struct {
 }
 
 type PerformanceModel struct {
-	OnPremiseWaitTime time.Duration `json:"onpremise_wait_time"`
-	AWSProvisionTime  time.Duration `json:"aws_provision_time"`
-	NetworkLatency    time.Duration `json:"network_latency"`
-	StorageLatency    time.Duration `json:"storage_latency"`
+	OnPremiseWaitTime Duration `json:"onpremise_wait_time"`
+	AWSProvisionTime  Duration `json:"aws_provision_time"`
+	NetworkLatency    Duration `json:"network_latency"`
+	StorageLatency    Duration `json:"storage_latency"`
 }
 
 type Duration time.Duration

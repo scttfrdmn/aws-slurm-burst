@@ -57,7 +57,7 @@ func suspendNodes(cmd *cobra.Command, args []string) error {
 
 	// Initialize components
 	slurmClient := slurm.NewClient(logger, &cfg.Slurm)
-	awsClient, err := aws.NewClient(logger, &cfg.AWS)
+	awsClient, err := aws.NewClient(logger, &cfg.AWS, cfg)
 	if err != nil {
 		return fmt.Errorf("failed to create AWS client: %w", err)
 	}

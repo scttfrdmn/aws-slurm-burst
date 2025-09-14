@@ -28,33 +28,43 @@ func TestFleetManager_selectInstanceTypes(t *testing.T) {
 		expected     []string
 	}{
 		{
-			name: "CPU-bound job with EFA",
+			name: "ASBA mode - specific instance types",
 			requirements: &types.InstanceRequirements{
 				MinCPUs:          4,
 				MinMemoryMB:      8192,
 				RequiresEFA:      true,
-				InstanceFamilies: []string{"c6i", "c5n"},
+				InstanceFamilies: []string{"c6i.xlarge", "c5n.large"}, // ASBA provides specific types
 			},
-			expected: []string{"c6i.xlarge", "c6i.large", "c5n.xlarge", "c5n.large"},
+			expected: []string{"c6i.xlarge", "c5n.large"},
 		},
 		{
-			name: "Memory-intensive job",
+			name: "Standalone mode - GPU workload",
 			requirements: &types.InstanceRequirements{
-				MinCPUs:          8,
-				MinMemoryMB:      65536, // 64GB
-				InstanceFamilies: []string{"r6i"},
+				MinCPUs:     8,
+				MinMemoryMB: 32768,
+				GPUs:        4,
+				// No InstanceFamilies specified - standalone mode
 			},
-			expected: []string{"r6i.4xlarge", "r6i.2xlarge"},
+			expected: []string{"p3.2xlarge", "g4dn.xlarge"},
 		},
 		{
-			name: "HPC job",
+			name: "Standalone mode - EFA workload",
 			requirements: &types.InstanceRequirements{
-				MinCPUs:          16,
-				MinMemoryMB:      32768,
-				HPCOptimized:     true,
-				InstanceFamilies: []string{"hpc6a"},
+				MinCPUs:     16,
+				MinMemoryMB: 32768,
+				RequiresEFA: true,
+				// No InstanceFamilies specified - standalone mode
 			},
-			expected: []string{"hpc6a.4xlarge", "hpc6a.2xlarge"},
+			expected: []string{"c5n.large", "c5n.xlarge", "c6i.large", "c6i.xlarge"},
+		},
+		{
+			name: "Standalone mode - general compute",
+			requirements: &types.InstanceRequirements{
+				MinCPUs:     4,
+				MinMemoryMB: 8192,
+				// No special requirements - standalone mode
+			},
+			expected: []string{"c5.large", "c5.xlarge", "m5.large", "m5.xlarge"},
 		},
 	}
 
