@@ -1,8 +1,8 @@
-# ABSA Integration Patterns
+# ASBA Integration Patterns
 
 ## Overview
 
-`aws-slurm-burst` supports multiple communication mechanisms with `aws-slurm-burst-advisor` (ABSA) to enable intelligent workload optimization while maintaining standalone functionality.
+`aws-slurm-burst` supports multiple communication mechanisms with `aws-slurm-burst-advisor` (ASBA) to enable intelligent workload optimization while maintaining standalone functionality.
 
 ## Communication Mechanisms
 
@@ -10,8 +10,8 @@
 
 **Workflow**:
 ```bash
-# ABSA analyzes job and writes execution plan
-absa analyze job.sbatch --output=/tmp/execution-plan.json
+# ASBA analyzes job and writes execution plan
+asba analyze job.sbatch --output=/tmp/execution-plan.json
 
 # aws-slurm-burst executes the plan
 aws-slurm-burst-resume aws-hpc-[001-008] --execution-plan=/tmp/execution-plan.json
@@ -29,8 +29,8 @@ aws-slurm-burst-resume aws-hpc-[001-008] --execution-plan=/tmp/execution-plan.js
 
 **Workflow**:
 ```bash
-# ABSA sets execution environment
-eval $(absa analyze job.sbatch --export-env)
+# ASBA sets execution environment
+eval $(asba analyze job.sbatch --export-env)
 
 # aws-slurm-burst reads from environment
 aws-slurm-burst-resume aws-hpc-[001-008]
@@ -38,14 +38,14 @@ aws-slurm-burst-resume aws-hpc-[001-008]
 
 **Environment Variables**:
 ```bash
-ABSA_SHOULD_BURST=true
-ABSA_INSTANCE_TYPES="hpc7a.2xlarge,c6i.2xlarge"
-ABSA_PURCHASING_OPTION=spot
-ABSA_MAX_SPOT_PRICE=0.85
-ABSA_REQUIRES_EFA=true
-ABSA_PLACEMENT_GROUP=cluster
-ABSA_MPI_PROCESSES=128
-ABSA_GANG_SCHEDULING=true
+ASBA_SHOULD_BURST=true
+ASBA_INSTANCE_TYPES="hpc7a.2xlarge,c6i.2xlarge"
+ASBA_PURCHASING_OPTION=spot
+ASBA_MAX_SPOT_PRICE=0.85
+ASBA_REQUIRES_EFA=true
+ASBA_PLACEMENT_GROUP=cluster
+ASBA_MPI_PROCESSES=128
+ASBA_GANG_SCHEDULING=true
 ```
 
 **Benefits**:
@@ -60,11 +60,11 @@ ABSA_GANG_SCHEDULING=true
 
 **Workflow**:
 ```bash
-# ABSA creates named pipe for communication
-absa daemon --pipe=/tmp/absa-decisions &
+# ASBA creates named pipe for communication
+asba daemon --pipe=/tmp/asba-decisions &
 
 # aws-slurm-burst reads from pipe
-aws-slurm-burst-resume aws-hpc-[001-008] --absa-pipe=/tmp/absa-decisions
+aws-slurm-burst-resume aws-hpc-[001-008] --asba-pipe=/tmp/asba-decisions
 ```
 
 **Benefits**:
@@ -79,11 +79,11 @@ aws-slurm-burst-resume aws-hpc-[001-008] --absa-pipe=/tmp/absa-decisions
 
 **Workflow**:
 ```bash
-# ABSA as microservice
-absa serve --port=8080 &
+# ASBA as microservice
+asba serve --port=8080 &
 
 # aws-slurm-burst makes HTTP requests
-aws-slurm-burst-resume aws-hpc-[001-008] --absa-url=http://localhost:8080
+aws-slurm-burst-resume aws-hpc-[001-008] --asba-url=http://localhost:8080
 ```
 
 **API Endpoints**:
@@ -115,72 +115,72 @@ Response:
 
 ### Standalone Mode (Default)
 ```bash
-# No ABSA - uses static configuration
+# No ASBA - uses static configuration
 aws-slurm-burst-resume aws-cpu-[001-004]
 ```
 
 Uses configuration-defined instance types, like original plugin behavior.
 
-### ABSA-Enhanced Mode
+### ASBA-Enhanced Mode
 ```bash
-# ABSA optimizes - aws-slurm-burst executes
-absa analyze job.sbatch --output=plan.json
+# ASBA optimizes - aws-slurm-burst executes
+asba analyze job.sbatch --output=plan.json
 aws-slurm-burst-resume aws-hpc-[001-016] --execution-plan=plan.json
 ```
 
-ABSA provides optimal instance selection and cost optimization.
+ASBA provides optimal instance selection and cost optimization.
 
 ### Auto-Discovery Mode (Proposed)
 ```bash
-# Automatically detect ABSA and use if available
-aws-slurm-burst-resume aws-hpc-[001-008] --auto-absa
+# Automatically detect ASBA and use if available
+aws-slurm-burst-resume aws-hpc-[001-008] --auto-asba
 ```
 
-Checks for ABSA in PATH, uses it if available, falls back to standalone.
+Checks for ASBA in PATH, uses it if available, falls back to standalone.
 
-## ABSA Feature Requests for aws-slurm-burst
+## ASBA Feature Requests for aws-slurm-burst
 
-Based on the integration patterns, here are feature requests for ABSA:
+Based on the integration patterns, here are feature requests for ASBA:
 
 ### 1. Execution Plan Export
 ```bash
-absa analyze job.sbatch --format=execution-plan --output=plan.json
+asba analyze job.sbatch --format=execution-plan --output=plan.json
 ```
 
 **Required**: JSON schema for execution plans compatible with aws-slurm-burst
 
 ### 2. Environment Variable Export
 ```bash
-eval $(absa analyze job.sbatch --export-env)
+eval $(asba analyze job.sbatch --export-env)
 ```
 
 **Required**: Environment variable format specification
 
 ### 3. Slurm Integration Hooks
 ```bash
-# ABSA as Slurm prolog/epilog
-absa slurm-prolog --job-id=$SLURM_JOB_ID --export-env
+# ASBA as Slurm prolog/epilog
+asba slurm-prolog --job-id=$SLURM_JOB_ID --export-env
 ```
 
 **Required**: Slurm job metadata parsing
 
 ### 4. Daemon Mode
 ```bash
-absa daemon --pipe=/tmp/absa --log-level=debug
+asba daemon --pipe=/tmp/asba --log-level=debug
 ```
 
 **Required**: Streaming analysis for high-throughput scenarios
 
 ### 5. Instance Type Recommendations
 ```bash
-absa recommend-instances --cpus=16 --memory=64GB --mpi=true --efa-required
+asba recommend-instances --cpus=16 --memory=64GB --mpi=true --efa-required
 ```
 
 **Required**: Instance type database and optimization algorithms
 
 ## Error Handling and Fallbacks
 
-### ABSA Unavailable
+### ASBA Unavailable
 ```
 aws-slurm-burst-resume aws-cpu-[001-004] --execution-plan=missing.json
 ↓
@@ -193,12 +193,12 @@ INFO: Using static configuration from config.yaml
 aws-slurm-burst-resume aws-cpu-[001-004] --execution-plan=invalid.json
 ↓
 ERROR: Invalid execution plan: no instance types specified
-SUGGESTION: Run 'absa analyze' to generate valid plan
+SUGGESTION: Run 'asba analyze' to generate valid plan
 ```
 
-### Partial ABSA Data
+### Partial ASBA Data
 ```
-# ABSA provides instance types but no cost constraints
+# ASBA provides instance types but no cost constraints
 {
   "should_burst": true,
   "instance_specification": {
@@ -207,12 +207,12 @@ SUGGESTION: Run 'absa analyze' to generate valid plan
   // Missing other fields
 }
 ↓
-INFO: Using ABSA instance types with default cost constraints
+INFO: Using ASBA instance types with default cost constraints
 ```
 
 ## Development Integration
 
-### For ABSA Development
+### For ASBA Development
 ```bash
 # Test execution plans
 aws-slurm-burst-resume test-[001-002] --execution-plan=test-plan.json --dry-run
@@ -223,11 +223,11 @@ aws-slurm-burst validate-plan test-plan.json
 
 ### For aws-slurm-burst Development
 ```bash
-# Test without ABSA
+# Test without ASBA
 aws-slurm-burst-resume test-[001-002] --config=test-config.yaml
 
-# Test with mock ABSA plan
-aws-slurm-burst-resume test-[001-002] --execution-plan=examples/absa-execution-plan.json
+# Test with mock ASBA plan
+aws-slurm-burst-resume test-[001-002] --execution-plan=examples/asba-execution-plan.json
 ```
 
 This design maintains clear separation of concerns while providing multiple integration options for different use cases.

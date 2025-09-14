@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MPI-aware job analysis and scheduling
 - EFA (Elastic Fabric Adapter) support with automatic detection
 - HPC instance family optimization (hpc7a, hpc6id, hpc6a)
-- Integration with aws-slurm-burst-advisor (ABSA) for cost optimization
+- Integration with aws-slurm-burst-advisor (ASBA) for cost optimization
 - Dynamic instance selection based on job requirements
 - Placement group management for MPI workloads
 - Spot instance support with MPI-aware interruption handling

@@ -14,7 +14,7 @@ import (
 type Config struct {
 	AWS     AWSConfig     `mapstructure:"aws"`
 	Slurm   SlurmConfig   `mapstructure:"slurm"`
-	ABSA    ABSAConfig    `mapstructure:"absa"`
+	ASBA    ASBAConfig    `mapstructure:"asba"`
 	MPI     MPIConfig     `mapstructure:"mpi"`
 	Logging LoggingConfig `mapstructure:"logging"`
 }
@@ -85,8 +85,8 @@ type AWSTag struct {
 	Value string `mapstructure:"value"`
 }
 
-// ABSAConfig contains configuration for ABSA integration
-type ABSAConfig struct {
+// ASBAConfig contains configuration for ASBA integration
+type ASBAConfig struct {
 	Enabled    bool   `mapstructure:"enabled"`
 	Command    string `mapstructure:"command"`
 	ConfigPath string `mapstructure:"config_path"`
@@ -155,10 +155,10 @@ func setDefaults() {
 	viper.SetDefault("slurm.suspend_time", 350)
 	viper.SetDefault("slurm.tree_width", 60000)
 
-	// ABSA defaults
-	viper.SetDefault("absa.enabled", false)
-	viper.SetDefault("absa.command", "absa")
-	viper.SetDefault("absa.timeout_seconds", 30)
+	// ASBA defaults
+	viper.SetDefault("asba.enabled", false)
+	viper.SetDefault("asba.command", "asba")
+	viper.SetDefault("asba.timeout_seconds", 30)
 
 	// MPI defaults
 	viper.SetDefault("mpi.efa_default", "preferred")

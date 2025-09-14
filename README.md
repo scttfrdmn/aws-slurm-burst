@@ -6,7 +6,7 @@ A high-performance Go-based plugin system for intelligent Slurm workload burstin
 
 - 🚀 **MPI-Aware**: Gang scheduling with cluster placement groups for tightly-coupled workloads
 - 📊 **Smart Instance Selection**: Dynamic right-sizing based on job requirements and real-time pricing
-- 🔄 **ABSA Integration**: Coordinates with aws-slurm-burst-advisor for intelligent burst decisions
+- 🔄 **ASBA Integration**: Coordinates with aws-slurm-burst-advisor for intelligent burst decisions
 - ⚡ **High Performance**: Go concurrency for fast node provisioning and management
 - 📈 **Observability**: Prometheus metrics and structured logging
 - 🎯 **Cost Optimization**: Spot instance management with MPI-aware interruption handling
@@ -15,7 +15,7 @@ A high-performance Go-based plugin system for intelligent Slurm workload burstin
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Slurm Daemon  │    │  ABSA Advisor   │    │   AWS APIs      │
+│   Slurm Daemon  │    │  ASBA Advisor   │    │   AWS APIs      │
 │                 │    │                 │    │                 │
 │ ┌─────────────┐ │    │ ┌─────────────┐ │    │ ┌─────────────┐ │
 │ │ResumeProgram│ │    │ │Burst Advisor│ │    │ │   EC2 Fleet │ │
@@ -53,13 +53,13 @@ aws-slurm-burst config generate-slurm
 sbatch --partition=aws-burst examples/mpi-job.sbatch
 ```
 
-## Integration with ABSA
+## Integration with ASBA
 
 This project coordinates with [aws-slurm-burst-advisor](https://github.com/scttfrdmn/aws-slurm-burst-advisor) to make intelligent bursting decisions:
 
 ```bash
-# ABSA determines if job should burst to AWS
-absa analyze job.sbatch --output=decision.json
+# ASBA determines if job should burst to AWS
+asba analyze job.sbatch --output=decision.json
 
 # aws-slurm-burst executes the burst with optimal instance selection
 aws-slurm-burst resume --job-metadata=decision.json node-[1-4]

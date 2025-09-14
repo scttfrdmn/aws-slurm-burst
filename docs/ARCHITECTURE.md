@@ -2,12 +2,12 @@
 
 ## Overview
 
-`aws-slurm-burst` is a next-generation plugin system for Slurm that provides intelligent workload bursting to AWS with first-class MPI support, EFA integration, and cost optimization through ABSA (aws-slurm-burst-advisor) coordination.
+`aws-slurm-burst` is a next-generation plugin system for Slurm that provides intelligent workload bursting to AWS with first-class MPI support, EFA integration, and cost optimization through ASBA (aws-slurm-burst-advisor) coordination.
 
 ## Key Design Principles
 
 1. **MPI-First**: Designed from the ground up to handle tightly-coupled MPI workloads
-2. **Cost-Aware**: Integrates with ABSA for intelligent cost/performance trade-offs
+2. **Cost-Aware**: Integrates with ASBA for intelligent cost/performance trade-offs
 3. **Performance-Optimized**: Leverages EFA, HPC instances, and placement groups
 4. **Modern Go**: Built with Go 1.23+ for high performance and maintainability
 
@@ -34,7 +34,7 @@
           │                             │
           ▼                             ▼
 ┌─────────────────────┐         ┌─────────────────────┐
-│       ABSA          │         │  aws-slurm-burst    │
+│       ASBA          │         │  aws-slurm-burst    │
 │  (Cost Advisor)     │         │   (This Project)    │
 │                     │         │                     │
 │ ┌─────────────────┐ │         │ ┌─────────────────┐ │
@@ -87,14 +87,14 @@
 Job Analysis → MPI Detection → EFA Requirements → Instance Families → Placement Groups
 ```
 
-### ABSA Integration (`internal/absa/integration.go`)
+### ASBA Integration (`internal/asba/integration.go`)
 
 **Responsibility**: Interface with aws-slurm-burst-advisor for cost-optimized decision making.
 
 **Integration Points**:
 - **Burst Decision**: Should this job run on AWS vs. on-premises?
 - **Cost Constraints**: Maximum acceptable cost per hour
-- **Instance Recommendations**: ABSA-suggested instance types
+- **Instance Recommendations**: ASBA-suggested instance types
 - **Urgency Assessment**: Time-sensitive jobs get priority treatment
 
 ### AWS Client (`internal/aws/`)
@@ -131,15 +131,15 @@ Job Analysis → MPI Detection → EFA Requirements → Instance Families → Pl
    - Identify known MPI applications (GROMACS, LAMMPS)
    - Determine EFA requirements based on scale and constraints
 
-3. **ABSA Consultation**:
-   - Send job requirements to ABSA
+3. **ASBA Consultation**:
+   - Send job requirements to ASBA
    - Receive cost analysis and burst recommendation
    - Get instance type suggestions
 
 4. **Instance Selection**:
    - Filter for EFA-capable instances if required
    - Prioritize HPC families for large-scale jobs
-   - Apply cost constraints from ABSA
+   - Apply cost constraints from ASBA
 
 5. **Resource Provisioning**:
    - Create cluster placement group for low-latency communication
@@ -162,10 +162,10 @@ slurm:
   bin_path: /usr/bin
   config_path: /etc/slurm/slurm.conf
 
-absa:
+asba:
   enabled: true
-  command: /usr/local/bin/absa
-  config_path: /etc/absa/config.yaml
+  command: /usr/local/bin/asba
+  config_path: /etc/asba/config.yaml
 
 mpi:
   efa_default: preferred  # required/preferred/optional/disabled
@@ -195,7 +195,7 @@ logging:
 - **Spot Integration**: Use spot instances where MPI fault tolerance allows
 - **Mixed Pricing**: Combine spot and on-demand for critical jobs
 - **Right-sizing**: Match instance specs to job requirements
-- **ABSA Guidance**: Use cost models for optimal decisions
+- **ASBA Guidance**: Use cost models for optimal decisions
 
 ## Security Considerations
 

@@ -5,7 +5,7 @@
 **Architecture**: Modern Go foundation with A-grade tooling
 **Testing**: 100% test pass rate, comprehensive coverage
 **MPI Framework**: Detection and analysis algorithms implemented
-**ABSA Integration**: Interface and coordination design complete
+**ASBA Integration**: Interface and coordination design complete
 
 **Implementation Status**: ~20% complete - Excellent foundation, need core AWS/Slurm integration
 
@@ -137,19 +137,19 @@
   - Dynamic pricing adaptation based on job urgency
   - Cost vs. reliability trade-off algorithms
 
-### 3.3 ABSA Deep Integration
+### 3.3 ASBA Deep Integration
 - [ ] **Command-line Integration**
-  - Actual subprocess calls to ABSA binary
+  - Actual subprocess calls to ASBA binary
   - JSON data exchange for cost/performance models
-  - Error handling for ABSA unavailability
+  - Error handling for ASBA unavailability
   - Configuration synchronization
 
 - [ ] **Decision Enforcement**
-  - ABSA cost constraint implementation
+  - ASBA cost constraint implementation
   - Instance recommendation processing
   - Urgency-based pricing strategy
 
-**Phase 3 Deliverable**: Cost-optimized bursting with ABSA coordination
+**Phase 3 Deliverable**: Cost-optimized bursting with ASBA coordination
 
 ---
 
@@ -257,7 +257,7 @@
 - **Slurm Compatibility**: Test against multiple Slurm versions
 
 ### Integration Risks
-- **ABSA Coordination**: Maintain loose coupling for independent development
+- **ASBA Coordination**: Maintain loose coupling for independent development
 - **Original Plugin Migration**: Provide migration tools and documentation
 
 ### Operational Risks

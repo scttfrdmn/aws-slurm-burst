@@ -120,8 +120,8 @@ func TestNetworkTopology_Values(t *testing.T) {
 	}
 }
 
-func TestABSADecision_JSON(t *testing.T) {
-	decision := &ABSADecision{
+func TestASBADecision_JSON(t *testing.T) {
+	decision := &ASBADecision{
 		ShouldBurst:       true,
 		RecommendedAction: "burst_with_spot",
 		CostAnalysis: CostAnalysis{
@@ -145,7 +145,7 @@ func TestABSADecision_JSON(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test unmarshaling
-	var unmarshaled ABSADecision
+	var unmarshaled ASBADecision
 	err = json.Unmarshal(data, &unmarshaled)
 	require.NoError(t, err)
 

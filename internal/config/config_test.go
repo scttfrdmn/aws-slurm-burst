@@ -395,9 +395,9 @@ slurm:
           subnet_ids:
             - subnet-12345
 
-absa:
+asba:
   enabled: true
-  command: /usr/local/bin/absa
+  command: /usr/local/bin/asba
   timeout_seconds: 60
 
 mpi:
@@ -442,9 +442,9 @@ logging:
 	assert.Equal(t, 5, gpuGroup.MaxNodes)
 	assert.Equal(t, "on-demand", gpuGroup.PurchasingOption)
 
-	assert.True(t, config.ABSA.Enabled)
-	assert.Equal(t, "/usr/local/bin/absa", config.ABSA.Command)
-	assert.Equal(t, 60, config.ABSA.Timeout)
+	assert.True(t, config.ASBA.Enabled)
+	assert.Equal(t, "/usr/local/bin/asba", config.ASBA.Command)
+	assert.Equal(t, 60, config.ASBA.Timeout)
 
 	assert.Equal(t, "required", config.MPI.EFADefault)
 	assert.Equal(t, 4, config.MPI.HPCInstancesThreshold)

@@ -34,18 +34,18 @@ func main() {
 
 	rootCmd := &cobra.Command{
 		Use:   "aws-slurm-burst-resume [node-list]",
-		Short: "Execute AWS instance provisioning based on ABSA execution plan",
+		Short: "Execute AWS instance provisioning based on ASBA execution plan",
 		Long: `Execute AWS instance provisioning for Slurm nodes based on a pre-analyzed
-execution plan from aws-slurm-burst-advisor (ABSA).
+execution plan from aws-slurm-burst-advisor (ASBA).
 
 This tool is a pure execution engine - all analysis, instance type selection,
-and cost optimization decisions are made by ABSA.`,
+and cost optimization decisions are made by ASBA.`,
 		Args: cobra.ExactArgs(1),
 		RunE: resumeNodes,
 	}
 
 	rootCmd.Flags().StringVarP(&configFile, "config", "c", "/etc/slurm/aws-burst.yaml", "Configuration file path")
-	rootCmd.Flags().StringVar(&executionPlan, "execution-plan", "", "Path to ABSA execution plan JSON file (optional)")
+	rootCmd.Flags().StringVar(&executionPlan, "execution-plan", "", "Path to ASBA execution plan JSON file (optional)")
 	rootCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Show what would be done without executing")
 
 	if err := rootCmd.Execute(); err != nil {
@@ -64,23 +64,23 @@ func resumeNodes(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// Determine execution mode: ABSA-driven or standalone
+	// Determine execution mode: ASBA-driven or standalone
 	var plan *types.ExecutionPlan
 
 	if executionPlan != "" {
-		// ABSA Mode: Load execution plan from ABSA
+		// ASBA Mode: Load execution plan from ASBA
 		plan, err = loadExecutionPlan(executionPlan)
 		if err != nil {
 			return fmt.Errorf("failed to load execution plan: %w", err)
 		}
 
-		// Check if ABSA recommends bursting
+		// Check if ASBA recommends bursting
 		if !plan.ShouldBurst {
-			logger.Info("ABSA recommends not bursting - job should run on-premises")
+			logger.Info("ASBA recommends not bursting - job should run on-premises")
 			return nil
 		}
 
-		logger.Info("Using ABSA execution plan", zap.String("plan_file", executionPlan))
+		logger.Info("Using ASBA execution plan", zap.String("plan_file", executionPlan))
 	} else {
 		// Standalone Mode: Generate default execution plan from configuration
 		plan, err = generateDefaultExecutionPlan(cfg, args[0])
@@ -112,7 +112,7 @@ func resumeNodes(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to parse node list '%s': %w", nodeList, err)
 	}
 
-	logger.Info("Executing ABSA plan",
+	logger.Info("Executing ASBA plan",
 		zap.String("nodes", nodeList),
 		zap.Int("node_count", len(nodes)),
 		zap.String("plan_file", executionPlan),
@@ -142,7 +142,7 @@ func resumeNodes(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// loadExecutionPlan loads and parses the ABSA execution plan
+// loadExecutionPlan loads and parses the ASBA execution plan
 func loadExecutionPlan(planPath string) (*types.ExecutionPlan, error) {
 	data, err := os.ReadFile(planPath)
 	if err != nil {
@@ -190,7 +190,7 @@ func executeDryRun(plan *types.ExecutionPlan, nodes []string) error {
 	return nil
 }
 
-// executeProvisioningPlan executes the ABSA plan by launching AWS instances
+// executeProvisioningPlan executes the ASBA plan by launching AWS instances
 func executeProvisioningPlan(
 	ctx context.Context,
 	awsClient *aws.Client,
@@ -209,7 +209,7 @@ func executeProvisioningPlan(
 		Partition: "aws", // TODO: Extract from node names
 		NodeGroup: "cpu", // TODO: Extract from node names
 		InstanceRequirements: &types.InstanceRequirements{
-			// Direct execution of ABSA decisions
+			// Direct execution of ASBA decisions
 			InstanceFamilies:      plan.InstanceSpec.InstanceTypes,
 			RequiresEFA:           plan.MPIConfig.RequiresEFA,
 			PlacementGroupType:    plan.NetworkConfig.PlacementGroupType,
@@ -292,7 +292,7 @@ func generateDefaultExecutionPlan(cfg *config.Config, nodeList string) (*types.E
 			LaunchTemplateID:   nodeGroupConfig.LaunchTemplateSpec.LaunchTemplateID,
 		},
 		MPIConfig: types.MPIConfiguration{
-			IsMPIJob:         false, // Default to non-MPI (ABSA would detect this)
+			IsMPIJob:         false, // Default to non-MPI (ASBA would detect this)
 			RequiresEFA:      false,
 			RequiresGangScheduling: false,
 		},

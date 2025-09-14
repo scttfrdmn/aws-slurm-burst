@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// ExecutionPlan represents a complete execution plan from ABSA
+// ExecutionPlan represents a complete execution plan from ASBA
 type ExecutionPlan struct {
 	ShouldBurst         bool                 `json:"should_burst"`
 	InstanceSpec        InstanceSpecification `json:"instance_specification"`
@@ -66,7 +66,7 @@ type ExecutionMetadata struct {
 	ProjectID           string            `json:"project_id"`
 	Priority            string            `json:"priority"`             // "urgent", "normal", "low"
 	AnalysisTimestamp   time.Time         `json:"analysis_timestamp"`
-	ABSAVersion         string            `json:"absa_version"`
+	ASBAVersion         string            `json:"asba_version"`
 	DecisionFactors     []string          `json:"decision_factors"`     // Why these choices were made
 	ExpectedPerformance PerformanceModel  `json:"expected_performance"`
 	Tags                map[string]string `json:"tags"`                 // Additional AWS tags
@@ -140,7 +140,7 @@ func (ep *ExecutionPlan) GetCostEstimate(nodeCount int, durationHours float64) f
 		return 0.0
 	}
 
-	// Use first instance type for estimation (ABSA would provide more accurate estimates)
+	// Use first instance type for estimation (ASBA would provide more accurate estimates)
 	costPerHour := ep.CostConstraints.MaxCostPerHour
 	if costPerHour == 0 {
 		// Fallback estimation

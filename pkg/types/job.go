@@ -52,8 +52,8 @@ const (
 	TopologyAny       NetworkTopology = "any"       // No specific requirements
 )
 
-// ABSADecision represents decision data from aws-slurm-burst-advisor
-type ABSADecision struct {
+// ASBADecision represents decision data from aws-slurm-burst-advisor
+type ASBADecision struct {
 	ShouldBurst       bool             `json:"should_burst"`
 	RecommendedAction string           `json:"recommended_action"`
 	CostAnalysis      CostAnalysis     `json:"cost_analysis"`

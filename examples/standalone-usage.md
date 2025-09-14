@@ -21,23 +21,23 @@ aws-slurm-burst-resume aws-hpc-[001-008] --dry-run
 - No MPI analysis (treats all jobs as embarrassingly parallel)
 - No cost optimization (uses configured settings)
 
-## ABSA Mode (Intelligent)
+## ASBA Mode (Intelligent)
 
 Uses execution plan from aws-slurm-burst-advisor for optimized decisions:
 
 ```bash
-# Step 1: ABSA analyzes job and generates execution plan
-absa analyze job.sbatch --output=execution-plan.json
+# Step 1: ASBA analyzes job and generates execution plan
+asba analyze job.sbatch --output=execution-plan.json
 
 # Step 2: Execute the plan
 aws-slurm-burst-resume aws-hpc-[001-016] --execution-plan=execution-plan.json
 
-# Or in one command (if ABSA supports it)
-absa analyze job.sbatch --execute-with=aws-slurm-burst-resume aws-hpc-[001-016]
+# Or in one command (if ASBA supports it)
+asba analyze job.sbatch --execute-with=aws-slurm-burst-resume aws-hpc-[001-016]
 ```
 
-**ABSA-driven behavior**:
-- Instance types selected by ABSA analysis
+**ASBA-driven behavior**:
+- Instance types selected by ASBA analysis
 - MPI detection and EFA optimization
 - Cost/performance trade-offs
 - Intelligent spot instance usage
@@ -51,7 +51,7 @@ absa analyze job.sbatch --execute-with=aws-slurm-burst-resume aws-hpc-[001-016]
 aws-slurm-burst-resume test-node-001
 
 # Production run with optimization
-absa analyze production-job.sbatch --output=plan.json
+asba analyze production-job.sbatch --output=plan.json
 aws-slurm-burst-resume production-[001-032] --execution-plan=plan.json
 ```
 
@@ -60,8 +60,8 @@ aws-slurm-burst-resume production-[001-032] --execution-plan=plan.json
 # Development: fast, cheap instances
 aws-slurm-burst-resume dev-[001-004] --config=dev-config.yaml
 
-# Production: ABSA-optimized
-absa analyze app.sbatch --budget=50.00 --deadline=2h --output=prod-plan.json
+# Production: ASBA-optimized
+asba analyze app.sbatch --budget=50.00 --deadline=2h --output=prod-plan.json
 aws-slurm-burst-resume prod-[001-064] --execution-plan=prod-plan.json
 ```
 
@@ -93,32 +93,32 @@ slurm:
             - subnet-12345678
 ```
 
-## ABSA Communication Patterns
+## ASBA Communication Patterns
 
 ### File-based (Current)
 ```bash
-absa analyze → execution-plan.json → aws-slurm-burst-resume
+asba analyze → execution-plan.json → aws-slurm-burst-resume
 ```
 
 ### Environment Variables
 ```bash
-# ABSA sets environment variables
-export ABSA_INSTANCE_TYPES="hpc7a.2xlarge,c6i.2xlarge"
-export ABSA_REQUIRES_EFA="true"
-export ABSA_PLACEMENT_GROUP="cluster"
+# ASBA sets environment variables
+export ASBA_INSTANCE_TYPES="hpc7a.2xlarge,c6i.2xlarge"
+export ASBA_REQUIRES_EFA="true"
+export ASBA_PLACEMENT_GROUP="cluster"
 aws-slurm-burst-resume aws-hpc-[001-008]
 ```
 
 ### Named Pipes / Unix Sockets
 ```bash
 # Real-time communication
-absa daemon --socket=/tmp/absa.sock &
-aws-slurm-burst-resume aws-hpc-[001-008] --absa-socket=/tmp/absa.sock
+asba daemon --socket=/tmp/asba.sock &
+aws-slurm-burst-resume aws-hpc-[001-008] --asba-socket=/tmp/asba.sock
 ```
 
 ### HTTP API
 ```bash
-# ABSA as microservice
-absa serve --port=8080 &
-aws-slurm-burst-resume aws-hpc-[001-008] --absa-url=http://localhost:8080
+# ASBA as microservice
+asba serve --port=8080 &
+aws-slurm-burst-resume aws-hpc-[001-008] --asba-url=http://localhost:8080
 ```
