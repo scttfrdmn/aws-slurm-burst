@@ -51,7 +51,7 @@ for automatic performance data collection.`,
 	rootCmd.Flags().StringVarP(&configFile, "config", "c", "/etc/slurm/aws-burst.yaml", "Configuration file path")
 	rootCmd.Flags().StringVar(&jobID, "job-id", "", "Slurm job ID to export performance data for (required)")
 	rootCmd.Flags().StringVar(&outputDir, "output-dir", "/var/spool/asba/learning", "Directory to write performance data")
-	rootCmd.Flags().StringVar(&outputFormat, "format", "asba-learning", "Output format: asba-learning, json, slurm-comment")
+	rootCmd.Flags().StringVar(&outputFormat, "format", "asba-learning", "Output format: asba-learning, json, slurm-comment, asbb-reconciliation")
 	rootCmd.Flags().BoolVar(&anonymize, "anonymize", false, "Anonymize user and project data for institutional sharing")
 
 	rootCmd.MarkFlagRequired("job-id")
@@ -297,6 +297,8 @@ func exportData(perfData *types.PerformanceFeedback, format, outputDir string) e
 		return exportJSON(perfData, outputDir)
 	case "slurm-comment":
 		return exportSlurmComment(perfData, outputDir)
+	case "asbb-reconciliation":
+		return exportASBBReconciliation(perfData, outputDir)
 	default:
 		return fmt.Errorf("unsupported export format: %s", format)
 	}
@@ -351,6 +353,44 @@ func exportSlurmComment(perfData *types.PerformanceFeedback, outputDir string) e
 		zap.String("format", "slurm-comment"),
 		zap.String("file", filename),
 		zap.String("comment", commentData))
+
+	return nil
+}
+
+func exportASBBReconciliation(perfData *types.PerformanceFeedback, outputDir string) error {
+	// Create ASBB-compatible cost reconciliation data
+	reconciliationData := map[string]interface{}{
+		"job_id":         perfData.JobMetadata.JobID,
+		"account":        perfData.JobMetadata.ProjectID,
+		"user_id":        perfData.JobMetadata.UserID,
+		"partition":      perfData.JobMetadata.Partition,
+		"actual_cost":    perfData.CostAnalysis.TotalCostUSD,
+		"compute_cost":   perfData.CostAnalysis.ComputeCostUSD,
+		"storage_cost":   perfData.CostAnalysis.StorageCostUSD,
+		"network_cost":   perfData.CostAnalysis.NetworkCostUSD,
+		"spot_savings":   perfData.CostAnalysis.SpotSavingsUSD,
+		"instance_types": perfData.JobMetadata.ActualExecution.InstanceTypesUsed,
+		"duration_hours": time.Duration(perfData.JobMetadata.ActualExecution.ExecutionDuration).Hours(),
+		"success":        perfData.JobMetadata.ActualExecution.Success,
+		"export_time":    time.Now().Format(time.RFC3339),
+		"plugin_version": perfData.ExecutionContext.PluginVersion,
+	}
+
+	filename := filepath.Join(outputDir, fmt.Sprintf("job-%s-asbb-reconciliation.json", perfData.JobMetadata.JobID))
+
+	data, err := json.MarshalIndent(reconciliationData, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal ASBB reconciliation data: %w", err)
+	}
+
+	if err := os.WriteFile(filename, data, 0644); err != nil {
+		return fmt.Errorf("failed to write ASBB reconciliation data: %w", err)
+	}
+
+	logger.Info("ASBB reconciliation data exported",
+		zap.String("format", "asbb-reconciliation"),
+		zap.String("file", filename),
+		zap.Float64("total_cost", perfData.CostAnalysis.TotalCostUSD))
 
 	return nil
 }

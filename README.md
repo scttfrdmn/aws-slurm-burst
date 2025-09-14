@@ -1,13 +1,29 @@
-# AWS Slurm Burst
+# AWS Slurm Burst (ASBX)
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/scttfrdmn/aws-slurm-burst)](https://goreportcard.com/report/github.com/scttfrdmn/aws-slurm-burst)
+[![Go Reference](https://pkg.go.dev/badge/github.com/scttfrdmn/aws-slurm-burst.svg)](https://pkg.go.dev/github.com/scttfrdmn/aws-slurm-burst)
+[![GitHub release](https://img.shields.io/github/release/scttfrdmn/aws-slurm-burst.svg)](https://github.com/scttfrdmn/aws-slurm-burst/releases)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Build Status](https://github.com/scttfrdmn/aws-slurm-burst/workflows/CI/badge.svg)](https://github.com/scttfrdmn/aws-slurm-burst/actions)
+[![codecov](https://codecov.io/gh/scttfrdmn/aws-slurm-burst/branch/main/graph/badge.svg)](https://codecov.io/gh/scttfrdmn/aws-slurm-burst)
 
 A production-ready, high-performance Go-based Slurm plugin for intelligent AWS workload bursting with advanced MPI support, EFA optimization, and cost-aware execution.
 
-## 🎯 Current Status: v0.2.0-rc
+**ASBX** (AWS Slurm Burst eXecution) is the execution engine of the research computing ecosystem.
+
+## 🌟 Research Computing Ecosystem
+
+**ASBX** works seamlessly with companion projects:
+- **[ASBA](https://github.com/scttfrdmn/aws-slurm-burst-advisor)** (Intelligence): Analyzes workloads and optimizes decisions
+- **[ASBB](https://github.com/scttfrdmn/aws-slurm-burst-budget)** (Budget): Manages real grant money and cost enforcement
+- **ASBX** (This Project): Executes optimized workloads with MPI and EFA support
+
+## 🎯 Current Status: v0.2.0
 
 **✅ Production Ready**: Complete AWS integration with gang scheduling
 **✅ MPI Optimized**: EFA-aware provisioning with placement groups
 **✅ Cost Intelligent**: Spot instance management with mixed pricing
-**✅ ASBA Coordinated**: Clean separation - ASBA analyzes, aws-slurm-burst executes
+**✅ Ecosystem Integrated**: Clean separation with ASBA intelligence and ASBB budget management
 
 ## Features
 
