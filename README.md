@@ -1,15 +1,22 @@
 # AWS Slurm Burst
 
-A high-performance Go-based plugin system for intelligent Slurm workload bursting to AWS, with first-class MPI support and dynamic instance optimization.
+A production-ready, high-performance Go-based Slurm plugin for intelligent AWS workload bursting with advanced MPI support, EFA optimization, and cost-aware execution.
+
+## 🎯 Current Status: v0.2.0-rc
+
+**✅ Production Ready**: Complete AWS integration with gang scheduling
+**✅ MPI Optimized**: EFA-aware provisioning with placement groups
+**✅ Cost Intelligent**: Spot instance management with mixed pricing
+**✅ ASBA Coordinated**: Clean separation - ASBA analyzes, aws-slurm-burst executes
 
 ## Features
 
-- 🚀 **MPI-Aware**: Gang scheduling with cluster placement groups for tightly-coupled workloads
-- 📊 **Smart Instance Selection**: Dynamic right-sizing based on job requirements and real-time pricing
-- 🔄 **ASBA Integration**: Coordinates with aws-slurm-burst-advisor for intelligent burst decisions
-- ⚡ **High Performance**: Go concurrency for fast node provisioning and management
-- 📈 **Observability**: Prometheus metrics and structured logging
-- 🎯 **Cost Optimization**: Spot instance management with MPI-aware interruption handling
+- 🚀 **MPI Gang Scheduling**: Atomic all-or-nothing provisioning for tightly-coupled workloads
+- ⚡ **EFA Integration**: Automatic EFA-capable instance selection and configuration
+- 📊 **Spot Intelligence**: Real-time spot pricing with MPI-aware allocation strategies
+- 🔄 **Dual Mode Operation**: Standalone (static config) + ASBA (intelligent optimization)
+- 🎯 **Cost Optimization**: Mixed spot/on-demand with automatic fallback
+- 📈 **Production Ready**: Comprehensive validation, error handling, and observability
 
 ## Architecture
 
@@ -39,28 +46,73 @@ A high-performance Go-based plugin system for intelligent Slurm workload burstin
 
 ## Quick Start
 
+### Installation
 ```bash
-# Install
-go install github.com/scttfrdmn/aws-slurm-burst/cmd/...@latest
+# Download latest release
+curl -L https://github.com/scttfrdmn/aws-slurm-burst/releases/latest/download/aws-slurm-burst-linux-amd64.tar.gz | tar xz
 
-# Configure
-aws-slurm-burst config init
+# Or build from source
+git clone https://github.com/scttfrdmn/aws-slurm-burst.git
+cd aws-slurm-burst
+make build
+```
 
-# Generate Slurm configuration
-aws-slurm-burst config generate-slurm
+### Configuration
+```bash
+# Validate your configuration
+aws-slurm-burst-validate config examples/config.yaml
 
-# Test MPI job bursting
-sbatch --partition=aws-burst examples/mpi-job.sbatch
+# Test standalone mode (like original plugin)
+aws-slurm-burst-resume aws-cpu-[001-004] --config=config.yaml --dry-run
+```
+
+### ASBA Integration (Recommended)
+```bash
+# ASBA analyzes and optimizes
+asba analyze job.sbatch --format=execution-plan --output=plan.json
+
+# aws-slurm-burst executes the optimized plan
+aws-slurm-burst-resume aws-hpc-[001-016] --execution-plan=plan.json
+```
+
+## Current Capabilities (v0.2.0-rc)
+
+### ✅ Complete AWS Integration
+- **EC2 Fleet API**: Real instance provisioning with AWS SDK v2
+- **Instance Lifecycle**: Launch, terminate, and state management
+- **Error Handling**: Retry logic, rollback, and graceful degradation
+
+### ✅ MPI Optimization
+- **Gang Scheduling**: Atomic all-or-nothing provisioning for MPI jobs
+- **EFA Support**: Automatic EFA-capable instance selection
+- **Placement Groups**: Cluster/partition/spread strategies for optimal networking
+- **Performance Validation**: Pre-flight capacity checks and instance verification
+
+### ✅ Cost Intelligence
+- **Spot Management**: Real-time spot pricing with interruption monitoring
+- **Mixed Pricing**: Intelligent spot/on-demand allocation strategies
+- **Cost Constraints**: Budget limits and automatic cost estimation
+- **MPI-Aware Pricing**: Different strategies for MPI vs embarrassingly parallel jobs
+
+### ✅ Dual Operation Modes
+
+**Standalone Mode** (Like Original Plugin):
+```bash
+# Uses static config.yaml instance types
+aws-slurm-burst-resume aws-cpu-[001-004] --config=config.yaml
+```
+
+**ASBA Mode** (Intelligent Optimization):
+```bash
+# ASBA provides execution plan, aws-slurm-burst executes
+aws-slurm-burst-resume aws-hpc-[001-016] --execution-plan=asba-plan.json
 ```
 
 ## Integration with ASBA
 
-This project coordinates with [aws-slurm-burst-advisor](https://github.com/scttfrdmn/aws-slurm-burst-advisor) to make intelligent bursting decisions:
+**Clean Architecture**: ASBA = Intelligence, aws-slurm-burst = Execution Engine
 
-```bash
-# ASBA determines if job should burst to AWS
-asba analyze job.sbatch --output=decision.json
+- **ASBA Analyzes**: MPI patterns, cost optimization, instance selection
+- **aws-slurm-burst Executes**: AWS provisioning, gang scheduling, cost management
 
-# aws-slurm-burst executes the burst with optimal instance selection
-aws-slurm-burst resume --job-metadata=decision.json node-[1-4]
-```
+See [ASBA Integration Guide](docs/ASBA-INTEGRATION.md) for complete integration patterns.

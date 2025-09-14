@@ -8,34 +8,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Initial project structure with Go 1.23+ support
-- MPI-aware job analysis and scheduling
-- EFA (Elastic Fabric Adapter) support with automatic detection
-- HPC instance family optimization (hpc7a, hpc6id, hpc6a)
-- Integration with aws-slurm-burst-advisor (ASBA) for cost optimization
-- Dynamic instance selection based on job requirements
-- Placement group management for MPI workloads
-- Spot instance support with MPI-aware interruption handling
-- Comprehensive logging with structured zap logger
-- Prometheus metrics for observability
-- CLI tools for resume, suspend, and state management operations
-- Configuration management with YAML support
+- Validation commands for configuration and execution plans
+- Development environment support with Slurm detection
+- Complete standalone test suite
 
 ### Changed
-- Complete rewrite from Python to Go for improved performance
-- Modern architecture with clean separation of concerns
-- Enhanced error handling and retry mechanisms
-
-### Deprecated
-
-### Removed
 
 ### Fixed
+- Duration type handling in JSON serialization
+
+## [0.2.0] - 2025-09-13
+
+### Added
+- **Complete AWS Integration**: Real EC2 Fleet API with AWS SDK v2
+- **MPI Gang Scheduling**: Atomic all-or-nothing provisioning for MPI workloads
+- **EFA Optimization**: Automatic EFA-capable instance detection and filtering
+- **Advanced Placement Groups**: Dynamic cluster/partition/spread placement strategies
+- **Spot Instance Management**: Real-time spot pricing with interruption monitoring
+- **Mixed Pricing Support**: Intelligent spot/on-demand allocation with MPI-aware strategies
+- **ExecutionPlan Support**: Complete ASBA integration via JSON execution plans
+- **Dual Operation Modes**: Standalone (static config) + ASBA (intelligent optimization)
+- **Validation Commands**: aws-slurm-burst-validate for configs and execution plans
+- **Development Support**: Graceful Slurm detection with mock fallback
+
+### Changed
+- **Architectural Refactor**: Clean separation of concerns with ASBA
+- **ASBA Integration**: Pure execution engine - ASBA provides intelligence
+- **Instance Selection**: ASBA-driven vs standalone mode logic
+- **Error Handling**: Comprehensive AWS API error handling and retry logic
 
 ### Security
-- IAM role-based authentication (no embedded credentials)
-- Secure instance communication via VPC
-- Regular security scanning in CI pipeline
+- **AWS SDK v2**: Latest security practices and authentication
+- **IAM Integration**: Proper instance profile and role-based authentication
+- **Network Security**: VPC, security group, and placement group management
 
 ## [0.1.0] - 2025-09-13
 

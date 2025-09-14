@@ -38,9 +38,9 @@ type SpotPricingStrategy struct {
 // OptimizeSpotStrategy determines optimal spot instance strategy for a job
 func (s *SpotManager) OptimizeSpotStrategy(ctx context.Context, req *FleetRequest) (*SpotPricingStrategy, error) {
 	strategy := &SpotPricingStrategy{
-		MaxSpotPrice:        req.InstanceRequirements.MaxSpotPrice,
-		AllowMixedPricing:   req.InstanceRequirements.AllowMixedPricing,
-		OnDemandFallback:    true, // Default to safe fallback
+		MaxSpotPrice:      req.InstanceRequirements.MaxSpotPrice,
+		AllowMixedPricing: req.InstanceRequirements.AllowMixedPricing,
+		OnDemandFallback:  true, // Default to safe fallback
 	}
 
 	// MPI jobs need special spot handling
@@ -202,11 +202,11 @@ func (s *SpotManager) MonitorSpotInterruptions(ctx context.Context, instanceIds 
 
 // SpotInterruptionEvent represents a spot instance interruption event
 type SpotInterruptionEvent struct {
-	InstanceID        string    `json:"instance_id"`
-	NodeName          string    `json:"node_name"`
-	InterruptionTime  time.Time `json:"interruption_time"`
-	InterruptionReason string   `json:"interruption_reason"`
-	Action            string    `json:"action"` // "terminate", "hibernate", "stop"
+	InstanceID         string    `json:"instance_id"`
+	NodeName           string    `json:"node_name"`
+	InterruptionTime   time.Time `json:"interruption_time"`
+	InterruptionReason string    `json:"interruption_reason"`
+	Action             string    `json:"action"` // "terminate", "hibernate", "stop"
 }
 
 // checkForInterruptions checks instances for spot interruption warnings
@@ -234,10 +234,10 @@ func (s *SpotManager) checkForInterruptions(ctx context.Context, instanceIds []s
 
 				event := SpotInterruptionEvent{
 					InstanceID:         aws.ToString(instance.InstanceId),
-					NodeName:          nodeName,
-					InterruptionTime:  time.Now(),
+					NodeName:           nodeName,
+					InterruptionTime:   time.Now(),
 					InterruptionReason: "spot_interruption",
-					Action:            "terminate",
+					Action:             "terminate",
 				}
 
 				select {

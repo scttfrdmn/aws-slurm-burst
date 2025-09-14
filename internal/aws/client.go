@@ -75,10 +75,10 @@ func (c *Client) LaunchInstances(ctx context.Context, req *LaunchRequest) (*Laun
 		SubnetIds:        nodeGroupConfig.SubnetIds,
 		SecurityGroupIds: nodeGroupConfig.SecurityGroupIds,
 		Tags: map[string]string{
-			"Partition":  req.Partition,
-			"NodeGroup":  req.NodeGroup,
-			"ManagedBy":  "aws-slurm-burst",
-			"JobID":      req.Job.JobID,
+			"Partition": req.Partition,
+			"NodeGroup": req.NodeGroup,
+			"ManagedBy": "aws-slurm-burst",
+			"JobID":     req.Job.JobID,
 		},
 	}
 

@@ -210,13 +210,13 @@ func executeProvisioningPlan(
 		NodeGroup: "cpu", // TODO: Extract from node names
 		InstanceRequirements: &types.InstanceRequirements{
 			// Direct execution of ASBA decisions
-			InstanceFamilies:      plan.InstanceSpec.InstanceTypes,
-			RequiresEFA:           plan.MPIConfig.RequiresEFA,
-			PlacementGroupType:    plan.NetworkConfig.PlacementGroupType,
-			MaxSpotPrice:          plan.InstanceSpec.MaxSpotPrice,
-			PreferSpot:            plan.InstanceSpec.PurchasingOption == "spot",
-			AllowMixedPricing:     plan.InstanceSpec.PurchasingOption == "mixed",
-			EnhancedNetworking:    plan.NetworkConfig.EnhancedNetworking,
+			InstanceFamilies:   plan.InstanceSpec.InstanceTypes,
+			RequiresEFA:        plan.MPIConfig.RequiresEFA,
+			PlacementGroupType: plan.NetworkConfig.PlacementGroupType,
+			MaxSpotPrice:       plan.InstanceSpec.MaxSpotPrice,
+			PreferSpot:         plan.InstanceSpec.PurchasingOption == "spot",
+			AllowMixedPricing:  plan.InstanceSpec.PurchasingOption == "mixed",
+			EnhancedNetworking: plan.NetworkConfig.EnhancedNetworking,
 		},
 		Job: &types.SlurmJob{
 			JobID:        plan.ExecutionMetadata.JobID,
@@ -294,8 +294,8 @@ func generateDefaultExecutionPlan(cfg *config.Config, nodeList string) (*types.E
 			IAMInstanceProfile: nodeGroupConfig.IAMInstanceProfile,
 		},
 		MPIConfig: types.MPIConfiguration{
-			IsMPIJob:         false, // Default to non-MPI (ASBA would detect this)
-			RequiresEFA:      false,
+			IsMPIJob:               false, // Default to non-MPI (ASBA would detect this)
+			RequiresEFA:            false,
 			RequiresGangScheduling: false,
 		},
 		CostConstraints: types.CostConstraints{
@@ -304,9 +304,9 @@ func generateDefaultExecutionPlan(cfg *config.Config, nodeList string) (*types.E
 			MaxDurationHours:  24, // Default 24 hours
 		},
 		NetworkConfig: types.NetworkConfiguration{
-			PlacementGroupType:  "", // No placement group by default
-			EnhancedNetworking:  true,
-			SingleAZRequired:    false,
+			PlacementGroupType: "", // No placement group by default
+			EnhancedNetworking: true,
+			SingleAZRequired:   false,
 		},
 		ExecutionMetadata: types.ExecutionMetadata{
 			JobID:             "standalone",

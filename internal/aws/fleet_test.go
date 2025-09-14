@@ -139,12 +139,12 @@ func TestFleetRequest_Validation(t *testing.T) {
 				Partition: "aws",
 				NodeGroup: "cpu",
 				InstanceRequirements: &types.InstanceRequirements{
-					MinCPUs:               4,
-					MinMemoryMB:           8192,
-					RequiresEFA:           true,
-					PlacementGroupType:    "cluster",
-					InstanceFamilies:      []string{"c6i", "c5n"},
-					EnhancedNetworking:    true,
+					MinCPUs:            4,
+					MinMemoryMB:        8192,
+					RequiresEFA:        true,
+					PlacementGroupType: "cluster",
+					InstanceFamilies:   []string{"c6i", "c5n"},
+					EnhancedNetworking: true,
 				},
 				Job: &types.SlurmJob{
 					JobID:        "test-001",

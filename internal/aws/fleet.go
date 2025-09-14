@@ -181,7 +181,7 @@ func (f *FleetManager) buildFleetRequest(req *FleetRequest, placementGroupName s
 	// Configure spot options if using spot instances
 	if req.InstanceRequirements.PreferSpot {
 		fleetRequest.SpotOptions = &types.SpotOptionsRequest{
-			AllocationStrategy:          types.SpotAllocationStrategyLowestPrice,
+			AllocationStrategy:           types.SpotAllocationStrategyLowestPrice,
 			InstanceInterruptionBehavior: types.SpotInstanceInterruptionBehaviorTerminate,
 		}
 
