@@ -2,15 +2,14 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/scttfrdmn/aws-slurm-burst/internal/absa"
 	"github.com/scttfrdmn/aws-slurm-burst/internal/aws"
 	"github.com/scttfrdmn/aws-slurm-burst/internal/config"
-	"github.com/scttfrdmn/aws-slurm-burst/internal/scheduler"
 	"github.com/scttfrdmn/aws-slurm-burst/internal/slurm"
 	"github.com/scttfrdmn/aws-slurm-burst/pkg/types"
 	"github.com/spf13/cobra"
@@ -18,10 +17,10 @@ import (
 )
 
 var (
-	configFile  string
-	jobMetadata string
-	dryRun      bool
-	logger      *zap.Logger
+	configFile    string
+	executionPlan string
+	dryRun        bool
+	logger        *zap.Logger
 )
 
 func main() {
@@ -35,18 +34,19 @@ func main() {
 
 	rootCmd := &cobra.Command{
 		Use:   "aws-slurm-burst-resume [node-list]",
-		Short: "Resume AWS instances for Slurm nodes with MPI and EFA support",
-		Long: `Resume AWS instances for Slurm nodes with intelligent MPI detection,
-EFA configuration, and dynamic instance selection based on job requirements.
+		Short: "Execute AWS instance provisioning based on ABSA execution plan",
+		Long: `Execute AWS instance provisioning for Slurm nodes based on a pre-analyzed
+execution plan from aws-slurm-burst-advisor (ABSA).
 
-Integrates with aws-slurm-burst-advisor (ABSA) for cost-optimized decision making.`,
+This tool is a pure execution engine - all analysis, instance type selection,
+and cost optimization decisions are made by ABSA.`,
 		Args: cobra.ExactArgs(1),
 		RunE: resumeNodes,
 	}
 
 	rootCmd.Flags().StringVarP(&configFile, "config", "c", "/etc/slurm/aws-burst.yaml", "Configuration file path")
-	rootCmd.Flags().StringVar(&jobMetadata, "job-metadata", "", "Path to ABSA job metadata JSON file")
-	rootCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Show what would be done without actually doing it")
+	rootCmd.Flags().StringVar(&executionPlan, "execution-plan", "", "Path to ABSA execution plan JSON file (optional)")
+	rootCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Show what would be done without executing")
 
 	if err := rootCmd.Execute(); err != nil {
 		logger.Error("Command execution failed", zap.Error(err))
@@ -64,22 +64,46 @@ func resumeNodes(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// Initialize components
-	slurmClient := slurm.NewClient(logger, &cfg.Slurm)
+	// Determine execution mode: ABSA-driven or standalone
+	var plan *types.ExecutionPlan
+
+	if executionPlan != "" {
+		// ABSA Mode: Load execution plan from ABSA
+		plan, err = loadExecutionPlan(executionPlan)
+		if err != nil {
+			return fmt.Errorf("failed to load execution plan: %w", err)
+		}
+
+		// Check if ABSA recommends bursting
+		if !plan.ShouldBurst {
+			logger.Info("ABSA recommends not bursting - job should run on-premises")
+			return nil
+		}
+
+		logger.Info("Using ABSA execution plan", zap.String("plan_file", executionPlan))
+	} else {
+		// Standalone Mode: Generate default execution plan from configuration
+		plan, err = generateDefaultExecutionPlan(cfg, args[0])
+		if err != nil {
+			return fmt.Errorf("failed to generate default execution plan: %w", err)
+		}
+
+		logger.Info("Using standalone mode with static configuration")
+	}
+
+	// Validate execution plan
+	if err := plan.ValidateExecutionPlan(); err != nil {
+		return fmt.Errorf("invalid execution plan: %w", err)
+	}
+
+	// Initialize AWS client
 	awsClient, err := aws.NewClient(logger, &cfg.AWS)
 	if err != nil {
 		return fmt.Errorf("failed to create AWS client: %w", err)
 	}
-	mpiScheduler := scheduler.NewMPIScheduler(logger)
-	absaClient := absa.NewABSAClient(logger, cfg.ABSA.Command, cfg.ABSA.ConfigPath)
 
-	// Validate ABSA availability (optional)
-	if cfg.ABSA.Enabled {
-		if err := absaClient.ValidateABSAAvailability(ctx); err != nil {
-			logger.Warn("ABSA not available, proceeding without cost optimization", zap.Error(err))
-			cfg.ABSA.Enabled = false
-		}
-	}
+	// Initialize Slurm client
+	slurmClient := slurm.NewClient(logger, &cfg.Slurm)
 
 	// Parse node list
 	nodeList := args[0]
@@ -88,153 +112,227 @@ func resumeNodes(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to parse node list '%s': %w", nodeList, err)
 	}
 
-	logger.Info("Resume request received",
+	logger.Info("Executing ABSA plan",
 		zap.String("nodes", nodeList),
 		zap.Int("node_count", len(nodes)),
-		zap.Bool("absa_enabled", cfg.ABSA.Enabled),
+		zap.String("plan_file", executionPlan),
+		zap.Bool("mpi_job", plan.MPIConfig.IsMPIJob),
+		zap.Strings("instance_types", plan.InstanceSpec.InstanceTypes),
+		zap.Bool("requires_efa", plan.MPIConfig.RequiresEFA),
 		zap.Bool("dry_run", dryRun))
 
-	// Group nodes by partition and node group
-	nodeGroups := groupNodesByPartition(nodes)
-
-	for partition, nodesByGroup := range nodeGroups {
-		for nodeGroup, nodeIds := range nodesByGroup {
-			if err := resumeNodeGroup(ctx, cfg, slurmClient, awsClient, mpiScheduler, absaClient, partition, nodeGroup, nodeIds); err != nil {
-				logger.Error("Failed to resume node group",
-					zap.String("partition", partition),
-					zap.String("node_group", nodeGroup),
-					zap.Strings("nodes", nodeIds),
-					zap.Error(err))
-				// Continue with other node groups
-			}
-		}
+	if dryRun {
+		return executeDryRun(plan, nodes)
 	}
+
+	// Execute the plan
+	result, err := executeProvisioningPlan(ctx, awsClient, slurmClient, plan, nodes)
+	if err != nil {
+		return fmt.Errorf("failed to execute provisioning plan: %w", err)
+	}
+
+	// Log execution results
+	logger.Info("Provisioning completed",
+		zap.Bool("success", result.Success),
+		zap.Int("launched", len(result.LaunchedInstances)),
+		zap.Int("failed", len(result.FailedInstances)),
+		zap.String("fleet_id", result.FleetID),
+		zap.Float64("estimated_cost", result.TotalCostEstimate))
 
 	return nil
 }
 
-func resumeNodeGroup(
-	ctx context.Context,
-	cfg *config.Config,
-	slurmClient *slurm.Client,
-	awsClient *aws.Client,
-	mpiScheduler *scheduler.MPIScheduler,
-	absaClient *absa.ABSAClient,
-	partition, nodeGroup string,
-	nodeIds []string,
-) error {
-	logger.Info("Resuming node group",
-		zap.String("partition", partition),
-		zap.String("node_group", nodeGroup),
-		zap.Strings("nodes", nodeIds),
-		zap.Int("count", len(nodeIds)))
-
-	// Get job information for intelligent scheduling
-	job, err := slurmClient.GetJobForNodes(ctx, nodeIds)
+// loadExecutionPlan loads and parses the ABSA execution plan
+func loadExecutionPlan(planPath string) (*types.ExecutionPlan, error) {
+	data, err := os.ReadFile(planPath)
 	if err != nil {
-		logger.Warn("Could not retrieve job information, using defaults", zap.Error(err))
-		job = createDefaultJob(partition, nodeGroup, nodeIds)
+		return nil, fmt.Errorf("failed to read execution plan file: %w", err)
 	}
 
-	// Analyze job for MPI characteristics
-	if err := mpiScheduler.AnalyzeJob(ctx, job); err != nil {
-		return fmt.Errorf("MPI analysis failed: %w", err)
+	var plan types.ExecutionPlan
+	if err := json.Unmarshal(data, &plan); err != nil {
+		return nil, fmt.Errorf("failed to parse execution plan JSON: %w", err)
 	}
 
-	// Determine instance requirements
-	instanceReq := mpiScheduler.DetermineInstanceRequirements(job)
+	logger.Debug("Loaded execution plan",
+		zap.String("file", planPath),
+		zap.Bool("should_burst", plan.ShouldBurst),
+		zap.Strings("instance_types", plan.InstanceSpec.InstanceTypes),
+		zap.Bool("mpi_job", plan.MPIConfig.IsMPIJob))
 
-	// Enrich with ABSA data if available
-	if cfg.ABSA.Enabled {
-		if err := absaClient.EnrichJobWithABSAData(ctx, job, instanceReq); err != nil {
-			logger.Warn("Failed to enrich with ABSA data", zap.Error(err))
-		}
+	return &plan, nil
+}
 
-		// Get ABSA instance recommendations
-		if recommendedTypes, err := absaClient.GetRecommendedInstanceTypes(ctx, job); err == nil && len(recommendedTypes) > 0 {
-			logger.Info("Using ABSA instance recommendations", zap.Strings("types", recommendedTypes))
-			instanceReq.InstanceFamilies = recommendedTypes
-		}
+// executeDryRun shows what would be executed without doing it
+func executeDryRun(plan *types.ExecutionPlan, nodes []string) error {
+	logger.Info("DRY RUN: Would execute the following plan:")
+	logger.Info("  Instance Types", zap.Strings("types", plan.InstanceSpec.InstanceTypes))
+	logger.Info("  Purchasing", zap.String("option", plan.InstanceSpec.PurchasingOption))
+	logger.Info("  Max Spot Price", zap.Float64("price", plan.InstanceSpec.MaxSpotPrice))
+	logger.Info("  Subnets", zap.Strings("subnet_ids", plan.InstanceSpec.SubnetIds))
+	logger.Info("  Nodes", zap.Strings("node_list", nodes))
+
+	if plan.MPIConfig.IsMPIJob {
+		logger.Info("  MPI Configuration:")
+		logger.Info("    Process Count", zap.Int("processes", plan.MPIConfig.ProcessCount))
+		logger.Info("    Requires EFA", zap.Bool("efa", plan.MPIConfig.RequiresEFA))
+		logger.Info("    Gang Scheduling", zap.Bool("gang", plan.MPIConfig.RequiresGangScheduling))
+		logger.Info("    Placement Group", zap.String("type", plan.NetworkConfig.PlacementGroupType))
 	}
 
-	if dryRun {
-		logger.Info("DRY RUN: Would launch instances",
-			zap.String("partition", partition),
-			zap.String("node_group", nodeGroup),
-			zap.Int("node_count", len(nodeIds)),
-			zap.Bool("mpi_job", job.IsMPIJob),
-			zap.Bool("requires_efa", instanceReq.RequiresEFA),
-			zap.Bool("hpc_optimized", instanceReq.HPCOptimized),
-			zap.Strings("instance_families", instanceReq.InstanceFamilies),
-			zap.String("placement_group", instanceReq.PlacementGroupType))
-		return nil
+	logger.Info("  Cost Constraints:")
+	logger.Info("    Max Total Cost", zap.Float64("total", plan.CostConstraints.MaxTotalCost))
+	logger.Info("    Max Cost/Hour", zap.Float64("hourly", plan.CostConstraints.MaxCostPerHour))
+
+	estimatedCost := plan.GetCostEstimate(len(nodes), plan.CostConstraints.MaxDurationHours)
+	logger.Info("  Estimated Total Cost", zap.Float64("cost", estimatedCost))
+
+	return nil
+}
+
+// executeProvisioningPlan executes the ABSA plan by launching AWS instances
+func executeProvisioningPlan(
+	ctx context.Context,
+	awsClient *aws.Client,
+	slurmClient *slurm.Client,
+	plan *types.ExecutionPlan,
+	nodes []string,
+) (*types.ExecutionResult, error) {
+
+	result := &types.ExecutionResult{
+		ExecutionStartTime: time.Now(),
+	}
+
+	// Build launch request from execution plan
+	launchReq := &aws.LaunchRequest{
+		NodeIds:   nodes,
+		Partition: "aws", // TODO: Extract from node names
+		NodeGroup: "cpu", // TODO: Extract from node names
+		InstanceRequirements: &types.InstanceRequirements{
+			// Direct execution of ABSA decisions
+			InstanceFamilies:      plan.InstanceSpec.InstanceTypes,
+			RequiresEFA:           plan.MPIConfig.RequiresEFA,
+			PlacementGroupType:    plan.NetworkConfig.PlacementGroupType,
+			MaxSpotPrice:          plan.InstanceSpec.MaxSpotPrice,
+			PreferSpot:            plan.InstanceSpec.PurchasingOption == "spot",
+			AllowMixedPricing:     plan.InstanceSpec.PurchasingOption == "mixed",
+			EnhancedNetworking:    plan.NetworkConfig.EnhancedNetworking,
+		},
+		Job: &types.SlurmJob{
+			JobID:        plan.ExecutionMetadata.JobID,
+			IsMPIJob:     plan.MPIConfig.IsMPIJob,
+			MPIProcesses: plan.MPIConfig.ProcessCount,
+		},
 	}
 
 	// Launch instances
-	launchResult, err := awsClient.LaunchInstances(ctx, &aws.LaunchRequest{
-		NodeIds:              nodeIds,
-		Partition:            partition,
-		NodeGroup:            nodeGroup,
-		InstanceRequirements: instanceReq,
-		Job:                  job,
-	})
+	launchResult, err := awsClient.LaunchInstances(ctx, launchReq)
 	if err != nil {
-		return fmt.Errorf("failed to launch instances: %w", err)
+		result.Success = false
+		result.Errors = append(result.Errors, types.ExecutionError{
+			Type:        "aws_api",
+			Message:     err.Error(),
+			Timestamp:   time.Now(),
+			Recoverable: true,
+		})
+		return result, fmt.Errorf("failed to launch instances: %w", err)
 	}
 
-	logger.Info("Instances launched successfully",
-		zap.String("partition", partition),
-		zap.String("node_group", nodeGroup),
-		zap.Int("requested", len(nodeIds)),
-		zap.Int("launched", len(launchResult.Instances)),
-		zap.String("fleet_id", launchResult.FleetId))
+	result.LaunchedInstances = launchResult.Instances
+	result.FleetID = launchResult.FleetId
 
-	// Update Slurm node information
+	// Update Slurm with instance information
 	if err := slurmClient.UpdateNodesWithInstanceInfo(ctx, launchResult.Instances); err != nil {
 		logger.Error("Failed to update Slurm nodes", zap.Error(err))
-		// Don't fail the operation, instances are launched
+		result.Errors = append(result.Errors, types.ExecutionError{
+			Type:        "slurm_api",
+			Message:     err.Error(),
+			Timestamp:   time.Now(),
+			Recoverable: true,
+		})
+		// Don't fail the operation - instances are launched
 	}
 
-	return nil
+	result.Success = true
+	result.ExecutionEndTime = time.Now()
+	result.ExecutionDuration = types.Duration(result.ExecutionEndTime.Sub(result.ExecutionStartTime))
+	result.TotalCostEstimate = plan.GetCostEstimate(len(nodes), plan.CostConstraints.MaxDurationHours)
+
+	return result, nil
 }
 
-func groupNodesByPartition(nodes []string) map[string]map[string][]string {
-	// Parse nodes like "aws-gpu-001", "aws-cpu-002" etc.
-	result := make(map[string]map[string][]string)
-
-	for _, node := range nodes {
-		parts := strings.Split(node, "-")
-		if len(parts) < 3 {
-			logger.Warn("Invalid node name format", zap.String("node", node))
-			continue
-		}
-
-		partition := parts[0] // "aws"
-		nodeGroup := parts[1] // "gpu" or "cpu"
-		nodeId := parts[2]    // "001"
-
-		if result[partition] == nil {
-			result[partition] = make(map[string][]string)
-		}
-		result[partition][nodeGroup] = append(result[partition][nodeGroup], nodeId)
+// generateDefaultExecutionPlan creates a basic execution plan from static configuration (original plugin style)
+func generateDefaultExecutionPlan(cfg *config.Config, nodeList string) (*types.ExecutionPlan, error) {
+	// Parse node list to determine partition/nodegroup
+	partition, nodeGroup, err := parseNodeListForPartition(nodeList)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse node list: %w", err)
 	}
 
-	return result
-}
+	// Find matching node group configuration
+	nodeGroupConfig := cfg.FindNodeGroup(partition, nodeGroup)
+	if nodeGroupConfig == nil {
+		return nil, fmt.Errorf("no configuration found for partition '%s' nodegroup '%s'", partition, nodeGroup)
+	}
 
-func createDefaultJob(partition, nodeGroup string, nodeIds []string) *types.SlurmJob {
-	return &types.SlurmJob{
-		JobID:     "unknown",
-		Name:      "resume-job",
-		Partition: partition,
-		NodeList:  nodeIds,
-		Resources: types.ResourceSpec{
-			Nodes:       len(nodeIds),
-			CPUsPerNode: 4,    // Default
-			MemoryMB:    8192, // Default
+	// Build instance types from configuration
+	var instanceTypes []string
+	for _, override := range nodeGroupConfig.LaunchTemplateOverrides {
+		instanceTypes = append(instanceTypes, override.InstanceType)
+	}
+
+	// Create default execution plan following original plugin patterns
+	plan := &types.ExecutionPlan{
+		ShouldBurst: true, // Always burst in standalone mode
+		InstanceSpec: types.InstanceSpecification{
+			InstanceTypes:      instanceTypes,
+			PurchasingOption:   nodeGroupConfig.PurchasingOption,
+			SubnetIds:          nodeGroupConfig.SubnetIds,
+			LaunchTemplateName: nodeGroupConfig.LaunchTemplateSpec.LaunchTemplateName,
+			LaunchTemplateID:   nodeGroupConfig.LaunchTemplateSpec.LaunchTemplateID,
 		},
-		Constraints: types.JobConstraints{},
-		IsMPIJob:    false, // Will be analyzed by MPI scheduler
-		MPITopology: types.TopologyAny,
+		MPIConfig: types.MPIConfiguration{
+			IsMPIJob:         false, // Default to non-MPI (ABSA would detect this)
+			RequiresEFA:      false,
+			RequiresGangScheduling: false,
+		},
+		CostConstraints: types.CostConstraints{
+			PreferSpot:        nodeGroupConfig.PurchasingOption == "spot",
+			AllowMixedPricing: false,
+			MaxDurationHours:  24, // Default 24 hours
+		},
+		NetworkConfig: types.NetworkConfiguration{
+			PlacementGroupType:  "", // No placement group by default
+			EnhancedNetworking:  true,
+			SingleAZRequired:    false,
+		},
+		ExecutionMetadata: types.ExecutionMetadata{
+			JobID:             "standalone",
+			Priority:          "normal",
+			AnalysisTimestamp: time.Now(),
+			DecisionFactors:   []string{"static_configuration"},
+		},
 	}
+
+	logger.Debug("Generated default execution plan",
+		zap.String("partition", partition),
+		zap.String("node_group", nodeGroup),
+		zap.Strings("instance_types", instanceTypes),
+		zap.String("purchasing", nodeGroupConfig.PurchasingOption))
+
+	return plan, nil
+}
+
+// parseNodeListForPartition extracts partition and nodegroup from node list like "aws-cpu-[001-004]"
+func parseNodeListForPartition(nodeList string) (string, string, error) {
+	// Simple parsing for node lists like "aws-cpu-001" or "aws-gpu-[001-004]"
+	parts := strings.Split(nodeList, "-")
+	if len(parts) < 2 {
+		return "", "", fmt.Errorf("invalid node list format: %s", nodeList)
+	}
+
+	partition := parts[0]
+	nodeGroup := parts[1]
+
+	return partition, nodeGroup, nil
 }

@@ -1,0 +1,63 @@
+{
+  "should_burst": true,
+  "instance_specification": {
+    "instance_types": ["hpc7a.2xlarge", "hpc6id.2xlarge", "c6in.2xlarge"],
+    "purchasing_option": "spot",
+    "max_spot_price": 0.85,
+    "subnet_ids": ["subnet-12345678", "subnet-87654321"],
+    "launch_template_name": "aws-hpc-mpi-template",
+    "security_group_ids": ["sg-12345678"],
+    "iam_instance_profile": "SlurmComputeInstanceRole"
+  },
+  "mpi_configuration": {
+    "is_mpi_job": true,
+    "process_count": 128,
+    "requires_gang_scheduling": true,
+    "mpi_implementation": "openmpi",
+    "requires_efa": true,
+    "efa_generation": 2
+  },
+  "cost_constraints": {
+    "max_total_cost": 15.50,
+    "max_duration_hours": 4.0,
+    "max_cost_per_hour": 3.875,
+    "prefer_spot": true,
+    "allow_mixed_pricing": true,
+    "cost_alert_threshold": 12.00,
+    "auto_terminate_hours": 6.0
+  },
+  "network_configuration": {
+    "placement_group_type": "cluster",
+    "placement_group_name": "",
+    "enhanced_networking": true,
+    "availability_zones": ["us-east-1a", "us-east-1b"],
+    "single_az_required": false,
+    "network_latency_class": "ultra-low"
+  },
+  "execution_metadata": {
+    "job_id": "12345",
+    "user_id": "researcher",
+    "project_id": "hpc-project-001",
+    "priority": "urgent",
+    "analysis_timestamp": "2025-09-13T17:30:00Z",
+    "absa_version": "1.2.0",
+    "decision_factors": [
+      "queue_depth_high",
+      "cost_savings_35_percent",
+      "efa_performance_benefit",
+      "urgent_timeline"
+    ],
+    "expected_performance": {
+      "onpremise_wait_time": "2h30m0s",
+      "aws_provision_time": "5m0s",
+      "network_latency": "2ms",
+      "storage_latency": "1ms"
+    },
+    "tags": {
+      "Environment": "HPC",
+      "Application": "GROMACS",
+      "CostCenter": "Research-001",
+      "ABSAManaged": "true"
+    }
+  }
+}
