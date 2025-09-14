@@ -54,7 +54,10 @@ for automatic performance data collection.`,
 	rootCmd.Flags().StringVar(&outputFormat, "format", "asba-learning", "Output format: asba-learning, json, slurm-comment, asbb-reconciliation")
 	rootCmd.Flags().BoolVar(&anonymize, "anonymize", false, "Anonymize user and project data for institutional sharing")
 
-	rootCmd.MarkFlagRequired("job-id")
+	if err := rootCmd.MarkFlagRequired("job-id"); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to mark flag as required: %v\n", err)
+		os.Exit(1)
+	}
 
 	if err := rootCmd.Execute(); err != nil {
 		logger.Error("Performance export failed", zap.Error(err))
@@ -312,7 +315,7 @@ func exportJSON(perfData *types.PerformanceFeedback, outputDir string) error {
 		return fmt.Errorf("failed to marshal performance data: %w", err)
 	}
 
-	if err := os.WriteFile(filename, data, 0644); err != nil {
+	if err := os.WriteFile(filename, data, 0600); err != nil {
 		return fmt.Errorf("failed to write performance data: %w", err)
 	}
 
@@ -345,7 +348,7 @@ func exportSlurmComment(perfData *types.PerformanceFeedback, outputDir string) e
 	commentData := fmt.Sprintf("aws_meta:%s", string(jsonData))
 	filename := filepath.Join(outputDir, fmt.Sprintf("job-%s-comment.txt", perfData.JobMetadata.JobID))
 
-	if err := os.WriteFile(filename, []byte(commentData), 0644); err != nil {
+	if err := os.WriteFile(filename, []byte(commentData), 0600); err != nil {
 		return fmt.Errorf("failed to write comment data: %w", err)
 	}
 
@@ -383,7 +386,7 @@ func exportASBBReconciliation(perfData *types.PerformanceFeedback, outputDir str
 		return fmt.Errorf("failed to marshal ASBB reconciliation data: %w", err)
 	}
 
-	if err := os.WriteFile(filename, data, 0644); err != nil {
+	if err := os.WriteFile(filename, data, 0600); err != nil {
 		return fmt.Errorf("failed to write ASBB reconciliation data: %w", err)
 	}
 

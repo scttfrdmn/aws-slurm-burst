@@ -2,7 +2,7 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/scttfrdmn/aws-slurm-burst)](https://goreportcard.com/report/github.com/scttfrdmn/aws-slurm-burst)
 [![Go Reference](https://pkg.go.dev/badge/github.com/scttfrdmn/aws-slurm-burst.svg)](https://pkg.go.dev/github.com/scttfrdmn/aws-slurm-burst)
-[![GitHub release](https://img.shields.io/github/release/scttfrdmn/aws-slurm-burst.svg)](https://github.com/scttfrdmn/aws-slurm-burst/releases)
+[![GitHub tag](https://img.shields.io/github/tag/scttfrdmn/aws-slurm-burst.svg)](https://github.com/scttfrdmn/aws-slurm-burst/tags)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Build Status](https://github.com/scttfrdmn/aws-slurm-burst/workflows/CI/badge.svg)](https://github.com/scttfrdmn/aws-slurm-burst/actions)
 [![codecov](https://codecov.io/gh/scttfrdmn/aws-slurm-burst/branch/main/graph/badge.svg)](https://codecov.io/gh/scttfrdmn/aws-slurm-burst)
