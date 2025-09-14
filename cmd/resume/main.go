@@ -66,7 +66,10 @@ func resumeNodes(cmd *cobra.Command, args []string) error {
 
 	// Initialize components
 	slurmClient := slurm.NewClient(logger, &cfg.Slurm)
-	awsClient := aws.NewClient(logger, &cfg.AWS)
+	awsClient, err := aws.NewClient(logger, &cfg.AWS)
+	if err != nil {
+		return fmt.Errorf("failed to create AWS client: %w", err)
+	}
 	mpiScheduler := scheduler.NewMPIScheduler(logger)
 	absaClient := absa.NewABSAClient(logger, cfg.ABSA.Command, cfg.ABSA.ConfigPath)
 

@@ -57,7 +57,10 @@ func suspendNodes(cmd *cobra.Command, args []string) error {
 
 	// Initialize components
 	slurmClient := slurm.NewClient(logger, &cfg.Slurm)
-	awsClient := aws.NewClient(logger, &cfg.AWS)
+	awsClient, err := aws.NewClient(logger, &cfg.AWS)
+	if err != nil {
+		return fmt.Errorf("failed to create AWS client: %w", err)
+	}
 
 	// Parse node list
 	nodeList := args[0]
@@ -102,12 +105,30 @@ func suspendNodeGroup(ctx context.Context, awsClient *aws.Client, partition, nod
 		zap.Strings("nodes", nodeIds),
 		zap.Int("count", len(nodeIds)))
 
-	// TODO: Implement actual instance termination
-	// For now, just log what would be done
-	logger.Info("Would terminate instances for nodes",
+	if dryRun {
+		logger.Info("DRY RUN: Would terminate instances for nodes",
+			zap.String("partition", partition),
+			zap.String("node_group", nodeGroup),
+			zap.Strings("node_ids", nodeIds))
+		return nil
+	}
+
+	// Generate full node names for termination
+	var nodeNames []string
+	for _, nodeId := range nodeIds {
+		nodeName := fmt.Sprintf("%s-%s-%s", partition, nodeGroup, nodeId)
+		nodeNames = append(nodeNames, nodeName)
+	}
+
+	// Terminate instances
+	if err := awsClient.TerminateInstances(ctx, nodeNames); err != nil {
+		return fmt.Errorf("failed to terminate instances: %w", err)
+	}
+
+	logger.Info("Successfully initiated instance termination",
 		zap.String("partition", partition),
 		zap.String("node_group", nodeGroup),
-		zap.Strings("node_ids", nodeIds))
+		zap.Strings("node_names", nodeNames))
 
 	return nil
 }
