@@ -8,14 +8,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Validation commands for configuration and execution plans
-- Development environment support with Slurm detection
-- Complete standalone test suite
 
 ### Changed
 
 ### Fixed
-- Duration type handling in JSON serialization
+
+## [0.3.0] - 2025-09-13
+
+### Added
+- **ASBX Branding**: Rebranded as AWS Slurm Burst eXecution for ecosystem clarity
+- **Performance Data Export**: Comprehensive aws-slurm-burst-export-performance CLI
+- **ASBA Learning Integration**: Complete performance feedback loop for adaptive intelligence
+- **ASBB Budget Integration**: Cost reconciliation data export for budget management
+- **SLURM Epilog Scripts**: Automatic performance data collection via job epilog
+- **Ecosystem Coordination**: Cross-project integration with ASBA v0.3.0 and ASBB
+- **Enhanced Validation**: aws-slurm-burst-validate with execution plan support
+- **README Badges**: Complete quality indicators including Go Report Card A+
+- **Development Support**: Slurm detection with graceful mock fallback
+
+### Changed
+- **Project Identity**: Positioned as execution engine in three-project ecosystem
+- **Documentation**: Complete ecosystem integration guides and coordination
+- **CLI Interface**: Enhanced with multiple export formats and validation options
+
+### Fixed
+- **CI Pipeline**: Resolved all linting and security scanning issues
+- **Go Report Card**: Achieved A+ grade with zero issues
+- **Error Handling**: Comprehensive error checking and logging improvements
+- **Security**: File permissions and proper error handling for production use
 
 ## [0.2.0] - 2025-09-13
 
