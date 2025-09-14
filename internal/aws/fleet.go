@@ -172,7 +172,7 @@ func (f *FleetManager) buildFleetRequest(req *FleetRequest, placementGroupName s
 			launchTemplateConfig,
 		},
 		TargetCapacitySpecification: &types.TargetCapacitySpecificationRequest{
-			TotalTargetCapacity:       aws.Int32(instanceCount),
+			TotalTargetCapacity:       aws.Int32(int32(instanceCount)),
 			DefaultTargetCapacityType: purchasingOption,
 		},
 		Type: types.FleetTypeInstant, // Synchronous launching for gang scheduling

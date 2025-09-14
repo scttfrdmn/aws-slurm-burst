@@ -117,7 +117,9 @@ func (s *SpotManager) GetCurrentSpotPrices(ctx context.Context, instanceTypes []
 		instanceType := string(price.InstanceType)
 		spotPrice := 0.0
 		if price.SpotPrice != nil {
-			fmt.Sscanf(aws.ToString(price.SpotPrice), "%f", &spotPrice)
+			if _, err := fmt.Sscanf(aws.ToString(price.SpotPrice), "%f", &spotPrice); err != nil {
+				s.logger.Debug("Failed to parse spot price", zap.String("price", aws.ToString(price.SpotPrice)))
+			}
 		}
 		priceMap[instanceType] = spotPrice
 	}

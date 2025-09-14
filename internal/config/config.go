@@ -341,7 +341,10 @@ func normalize(config *Config) {
 	// Ensure log file directory exists
 	if config.Logging.File != "" {
 		dir := filepath.Dir(config.Logging.File)
-		os.MkdirAll(dir, 0755)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			// Log directory creation failure, but don't fail configuration loading
+			fmt.Printf("Warning: failed to create log directory %s: %v\n", dir, err)
+		}
 	}
 }
 

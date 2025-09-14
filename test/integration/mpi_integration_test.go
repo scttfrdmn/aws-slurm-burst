@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/scttfrdmn/aws-slurm-burst/internal/config"
 	"github.com/scttfrdmn/aws-slurm-burst/internal/scheduler"
 	"github.com/scttfrdmn/aws-slurm-burst/pkg/types"
 	"github.com/stretchr/testify/assert"
