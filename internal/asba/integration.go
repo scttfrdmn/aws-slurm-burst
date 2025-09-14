@@ -111,7 +111,7 @@ func (c *ASBAClient) EnrichJobWithASBAData(ctx context.Context, job *types.Slurm
 	}
 
 	// Adjust strategy based on urgency
-	if decision.PerformanceModel.OnPremiseWaitTime.Minutes() > 60 {
+	if time.Duration(decision.PerformanceModel.OnPremiseWaitTime).Minutes() > 60 {
 		// Job is urgent, prefer reliability over cost
 		instanceReq.AllowMixedPricing = true
 		instanceReq.PreferSpot = false
