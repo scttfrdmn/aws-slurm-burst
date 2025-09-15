@@ -12,11 +12,21 @@ import (
 
 // Config represents the complete application configuration
 type Config struct {
-	AWS     AWSConfig     `mapstructure:"aws"`
-	Slurm   SlurmConfig   `mapstructure:"slurm"`
-	ASBA    ASBAConfig    `mapstructure:"asba"`
-	MPI     MPIConfig     `mapstructure:"mpi"`
-	Logging LoggingConfig `mapstructure:"logging"`
+	AWS       AWSConfig     `mapstructure:"aws"`
+	Slurm     SlurmConfig   `mapstructure:"slurm"`
+	ASBA      ASBAConfig    `mapstructure:"asba"`
+	ASBB      ASBBConfig    `mapstructure:"asbb"`
+	MPI       MPIConfig     `mapstructure:"mpi"`
+	Logging   LoggingConfig `mapstructure:"logging"`
+	Ecosystem EcosystemConfig `mapstructure:"ecosystem"`
+}
+
+// EcosystemConfig contains ecosystem-wide configuration
+type EcosystemConfig struct {
+	AutoDetect         bool   `mapstructure:"auto_detect"`
+	SharedConfigPath   string `mapstructure:"shared_config_path"`   // Optional shared config across all tools
+	DataExchangeDir    string `mapstructure:"data_exchange_dir"`    // Directory for inter-tool communication
+	EnableCrossProject bool   `mapstructure:"enable_cross_project"` // Enable cross-project features
 }
 
 // AWSConfig contains AWS-specific configuration
@@ -89,10 +99,18 @@ type AWSTag struct {
 
 // ASBAConfig contains configuration for ASBA integration
 type ASBAConfig struct {
-	Enabled    bool   `mapstructure:"enabled"`
+	Enabled    string `mapstructure:"enabled"`    // "auto-detect", "true", "false"
 	Command    string `mapstructure:"command"`
 	ConfigPath string `mapstructure:"config_path"`
 	Timeout    int    `mapstructure:"timeout_seconds"`
+}
+
+// ASBBConfig contains configuration for ASBB integration
+type ASBBConfig struct {
+	Enabled           string `mapstructure:"enabled"`             // "auto-detect", "true", "false"
+	Command           string `mapstructure:"command"`
+	ReconciliationDir string `mapstructure:"reconciliation_dir"`
+	Timeout           int    `mapstructure:"timeout_seconds"`
 }
 
 // MPIConfig contains MPI-specific configuration
@@ -158,9 +176,20 @@ func setDefaults() {
 	viper.SetDefault("slurm.tree_width", 60000)
 
 	// ASBA defaults
-	viper.SetDefault("asba.enabled", false)
+	viper.SetDefault("asba.enabled", "auto-detect")
 	viper.SetDefault("asba.command", "asba")
 	viper.SetDefault("asba.timeout_seconds", 30)
+
+	// ASBB defaults
+	viper.SetDefault("asbb.enabled", "auto-detect")
+	viper.SetDefault("asbb.command", "asbb")
+	viper.SetDefault("asbb.reconciliation_dir", "/var/spool/asbb/costs")
+	viper.SetDefault("asbb.timeout_seconds", 30)
+
+	// Ecosystem defaults
+	viper.SetDefault("ecosystem.auto_detect", true)
+	viper.SetDefault("ecosystem.data_exchange_dir", "/var/spool/asbx/ecosystem")
+	viper.SetDefault("ecosystem.enable_cross_project", true)
 
 	// MPI defaults
 	viper.SetDefault("mpi.efa_default", "preferred")

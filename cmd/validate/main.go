@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/scttfrdmn/aws-slurm-burst/internal/config"
+	"github.com/scttfrdmn/aws-slurm-burst/internal/ecosystem"
 	"github.com/scttfrdmn/aws-slurm-burst/pkg/types"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -121,13 +123,19 @@ func executionPlanCmd() *cobra.Command {
 func integrationCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "integration",
-		Short: "Validate integration between configuration and execution plan",
+		Short: "Validate integration and check ecosystem status",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Info("Running integration validation tests")
 
 			// Test basic functionality
 			if err := validateBasicIntegration(); err != nil {
 				return fmt.Errorf("integration validation failed: %w", err)
+			}
+
+			// Check ecosystem status
+			if err := validateEcosystemStatus(); err != nil {
+				logger.Warn("Ecosystem validation issues found", zap.Error(err))
+				// Don't fail - just warn about missing components
 			}
 
 			logger.Info("✅ Integration validation passed")
@@ -215,5 +223,67 @@ func validateBasicIntegration() error {
 	}
 
 	logger.Info("Basic integration tests passed")
+	return nil
+}
+
+// validateEcosystemStatus checks ecosystem companion tool availability
+func validateEcosystemStatus() error {
+	detector := ecosystem.NewEcosystemDetector(logger)
+	status := detector.DetectEcosystem(context.Background())
+
+	logger.Info("🌟 Ecosystem Status Report")
+
+	// ASBA Status
+	if status.ASBA.Available {
+		logger.Info("✅ ASBA (Intelligence) Available",
+			zap.String("command", status.ASBA.Command),
+			zap.String("version", status.ASBA.Version),
+			zap.Bool("execution_plan_support", status.ASBA.SupportsExecPlan),
+			zap.Bool("burst_command_support", status.ASBA.SupportsBurst))
+	} else {
+		logger.Info("⚠️  ASBA (Intelligence) Not Found - Operating in standalone mode")
+		logger.Info("   Install ASBA for intelligent job analysis: https://github.com/scttfrdmn/aws-slurm-burst-advisor")
+	}
+
+	// ASBB Status
+	if status.ASBB.Available {
+		logger.Info("✅ ASBB (Budget) Available",
+			zap.String("command", status.ASBB.Command),
+			zap.String("version", status.ASBB.Version),
+			zap.Bool("reconciliation_support", status.ASBB.SupportsReconciliation),
+			zap.String("reconciliation_dir", status.ASBB.ReconciliationDir))
+	} else {
+		logger.Info("⚠️  ASBB (Budget) Not Found - Budget features disabled")
+		logger.Info("   Install ASBB for grant budget management: https://github.com/scttfrdmn/aws-slurm-burst-budget")
+	}
+
+	// Ecosystem Recommendations
+	recommendations := detector.GetEnhancementRecommendations(status)
+	if len(recommendations) > 0 {
+		logger.Info("💡 Ecosystem Enhancement Recommendations:")
+		for _, rec := range recommendations {
+			logger.Info("   • " + rec)
+		}
+	}
+
+	// Show current capabilities
+	logger.Info("🎯 Current ASBX Capabilities:")
+	logger.Info("   ✅ Standalone Mode: Static configuration execution (always available)")
+
+	if status.ASBA.Available {
+		logger.Info("   ✅ ASBA Mode: Intelligent execution plans")
+		if status.ASBA.SupportsBurst {
+			logger.Info("   ✅ Integrated Workflow: asba burst command integration")
+		}
+	}
+
+	if status.ASBB.Available {
+		logger.Info("   ✅ Budget Integration: Automatic cost reconciliation")
+	}
+
+	if status.ASBA.Available && status.ASBB.Available {
+		logger.Info("   🎉 Complete Ecosystem: Intelligence + Execution + Budget!")
+	}
+
 	return nil
 }

@@ -396,9 +396,13 @@ slurm:
             - subnet-12345
 
 asba:
-  enabled: true
+  enabled: "true"
   command: /usr/local/bin/asba
   timeout_seconds: 60
+
+asbb:
+  enabled: auto-detect
+  command: asbb
 
 mpi:
   efa_default: required
@@ -442,7 +446,7 @@ logging:
 	assert.Equal(t, 5, gpuGroup.MaxNodes)
 	assert.Equal(t, "on-demand", gpuGroup.PurchasingOption)
 
-	assert.True(t, config.ASBA.Enabled)
+	assert.Equal(t, "true", config.ASBA.Enabled)
 	assert.Equal(t, "/usr/local/bin/asba", config.ASBA.Command)
 	assert.Equal(t, 60, config.ASBA.Timeout)
 
