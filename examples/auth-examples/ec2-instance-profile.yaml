@@ -1,0 +1,52 @@
+# AWS EC2 Instance Profile Authentication (Recommended for AWS-hosted Slurm head nodes)
+# Most secure method - no credentials stored in configuration
+
+aws:
+  region: us-east-1
+  authentication_method: instance_profile
+  retry_max_attempts: 3
+
+# ASBX will use the IAM role attached to the EC2 instance
+# Requires: IAM role with appropriate permissions attached to head node
+
+slurm:
+  bin_path: /usr/bin/
+  partitions:
+    - partition_name: aws
+      node_groups:
+        - node_group_name: cpu
+          max_nodes: 20
+          region: us-east-1
+          purchasing_option: spot
+          launch_template_specification:
+            launch_template_name: "university-slurm-cpu-template"
+            version: "$Latest"
+          launch_template_overrides:
+            - instance_type: c5.large
+            - instance_type: c5.xlarge
+          subnet_ids:
+            - subnet-12345678
+            - subnet-87654321
+          security_group_ids:
+            - sg-12345678
+          iam_instance_profile: "SlurmComputeInstanceRole"
+
+# Required IAM Policy for Head Node Role:
+# {
+#   "Version": "2012-10-17",
+#   "Statement": [
+#     {
+#       "Effect": "Allow",
+#       "Action": [
+#         "ec2:CreateFleet",
+#         "ec2:TerminateInstances",
+#         "ec2:DescribeInstances",
+#         "ec2:CreatePlacementGroup",
+#         "ec2:DescribePlacementGroups",
+#         "ec2:CreateTags",
+#         "iam:PassRole"
+#       ],
+#       "Resource": "*"
+#     }
+#   ]
+# }

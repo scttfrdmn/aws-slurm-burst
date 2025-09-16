@@ -35,6 +35,61 @@ type AWSConfig struct {
 	Profile          string `mapstructure:"profile"`
 	RetryMaxAttempts int    `mapstructure:"retry_max_attempts"`
 	RetryMode        string `mapstructure:"retry_mode"`
+
+	// Modern authentication configuration
+	AuthenticationMethod string                 `mapstructure:"authentication_method"`
+	AssumeRole          *AssumeRoleConfig      `mapstructure:"assume_role"`
+	SSO                 *SSOConfig             `mapstructure:"sso"`
+	WebIdentity         *WebIdentityConfig     `mapstructure:"web_identity"`
+	CrossAccount        *CrossAccountConfig    `mapstructure:"cross_account"`
+	AccessKeys          *AccessKeysConfig      `mapstructure:"access_keys"`
+	TokenRefresh        *TokenRefreshConfig    `mapstructure:"token_refresh"`
+}
+
+// AccessKeysConfig contains static access key configuration (DISCOURAGED)
+type AccessKeysConfig struct {
+	AccessKeyID     string `mapstructure:"access_key_id"`
+	SecretAccessKey string `mapstructure:"secret_access_key"`
+	SessionToken    string `mapstructure:"session_token"`
+}
+
+// AssumeRoleConfig contains STS AssumeRole configuration
+type AssumeRoleConfig struct {
+	RoleARN         string `mapstructure:"role_arn"`
+	SessionName     string `mapstructure:"session_name"`
+	DurationSeconds int32  `mapstructure:"duration_seconds"`
+	ExternalID      string `mapstructure:"external_id"`
+	Policy          string `mapstructure:"policy"`
+}
+
+// SSOConfig contains AWS IAM Identity Center configuration
+type SSOConfig struct {
+	ProfileName string `mapstructure:"profile_name"`
+	StartURL    string `mapstructure:"start_url"`
+	AccountID   string `mapstructure:"account_id"`
+	RoleName    string `mapstructure:"role_name"`
+}
+
+// WebIdentityConfig contains Web Identity Federation configuration
+type WebIdentityConfig struct {
+	RoleARN     string `mapstructure:"role_arn"`
+	TokenFile   string `mapstructure:"token_file"`
+	SessionName string `mapstructure:"session_name"`
+}
+
+// CrossAccountConfig contains cross-account role assumption configuration
+type CrossAccountConfig struct {
+	SourceProfile string `mapstructure:"source_profile"`
+	TargetRoleARN string `mapstructure:"target_role_arn"`
+	ExternalID    string `mapstructure:"external_id"`
+	SessionName   string `mapstructure:"session_name"`
+}
+
+// TokenRefreshConfig contains token refresh configuration
+type TokenRefreshConfig struct {
+	Enabled         bool `mapstructure:"enabled"`
+	RefreshInterval int  `mapstructure:"refresh_interval_minutes"`
+	PreExpireBuffer int  `mapstructure:"pre_expire_buffer_minutes"`
 }
 
 // SlurmConfig contains Slurm integration configuration
@@ -164,6 +219,7 @@ func setDefaults() {
 	// AWS defaults (no default region - it's required)
 	viper.SetDefault("aws.retry_max_attempts", 3)
 	viper.SetDefault("aws.retry_mode", "adaptive")
+	viper.SetDefault("aws.authentication_method", "instance_profile") // Secure default for AWS deployments
 
 	// Slurm defaults (from original plugin)
 	viper.SetDefault("slurm.bin_path", "/usr/bin")

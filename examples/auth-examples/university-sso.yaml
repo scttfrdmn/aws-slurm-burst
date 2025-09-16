@@ -1,0 +1,53 @@
+# AWS IAM Identity Center (SSO) Authentication (Recommended for Universities)
+# Perfect for academic institutions with centralized identity management
+
+aws:
+  region: us-east-1
+  authentication_method: sso
+  sso:
+    profile_name: "university-research"
+    start_url: "https://university.awsapps.com/start"
+    account_id: "123456789012"
+    role_name: "ResearchComputingRole"
+
+# Benefits for Academic Institutions:
+# - Centralized identity management
+# - Integration with university authentication systems
+# - Temporary credentials (automatically refreshed)
+# - Fine-grained permission controls
+# - Audit trails and compliance
+
+# Setup Requirements:
+# 1. Configure AWS IAM Identity Center
+# 2. Integrate with university identity provider (Active Directory, SAML, etc.)
+# 3. Create research computing permission sets
+# 4. Assign users/groups to appropriate roles
+# 5. Run: aws sso login --profile university-research
+
+slurm:
+  bin_path: /usr/bin/
+  partitions:
+    - partition_name: aws
+      node_groups:
+        - node_group_name: cpu
+          max_nodes: 50
+          region: us-east-1
+          purchasing_option: spot
+          launch_template_specification:
+            launch_template_name: "university-slurm-template"
+            version: "$Latest"
+          launch_template_overrides:
+            - instance_type: c5.large
+            - instance_type: c5.xlarge
+            - instance_type: c6i.large
+          subnet_ids:
+            - subnet-university-private-1a
+            - subnet-university-private-1b
+          security_group_ids:
+            - sg-university-slurm
+          iam_instance_profile: "UniversityComputeInstanceRole"
+
+ecosystem:
+  auto_detect: true
+  enable_cross_project: true
+  shared_config_path: /etc/research-computing/shared.yaml

@@ -1,0 +1,76 @@
+# Cross-Account Role Assumption (Common for Academic Multi-Account Setups)
+# Perfect for university shared services and research account separation
+
+aws:
+  region: us-east-1
+  authentication_method: cross_account
+  cross_account:
+    source_profile: "university-main"           # Source account profile
+    target_role_arn: "arn:aws:iam::987654321098:role/ComputeAccountRole"
+    external_id: "university-slurm-burst"      # Shared secret for added security
+    session_name: "slurm-burst-research"
+
+# Academic Use Cases:
+# - Shared services account → Research compute accounts
+# - Central IT management → Department-specific AWS accounts
+# - Multi-PI grants with separate AWS accounts
+# - Compliance boundaries between research projects
+
+# Security Benefits:
+# - Temporary credentials (automatically expire)
+# - External ID provides additional security layer
+# - Clear audit trail of cross-account access
+# - Fine-grained permission controls per research account
+
+slurm:
+  bin_path: /usr/bin/
+  partitions:
+    - partition_name: aws
+      node_groups:
+        - node_group_name: research
+          max_nodes: 100
+          region: us-east-1
+          purchasing_option: mixed  # Balanced cost/reliability
+          launch_template_specification:
+            launch_template_name: "research-compute-template"
+            version: "$Latest"
+          launch_template_overrides:
+            - instance_type: c5.large
+            - instance_type: c5.xlarge
+            - instance_type: c6i.large
+            - instance_type: c6i.xlarge
+          subnet_ids:
+            - subnet-research-private-1a
+            - subnet-research-private-1b
+          security_group_ids:
+            - sg-research-compute
+          iam_instance_profile: "ResearchComputeInstanceRole"
+
+# Required Setup:
+# 1. Configure source account credentials (~/.aws/config):
+#    [profile university-main]
+#    region = us-east-1
+#    # Use SSO or instance profile for source account
+#
+# 2. Target account role trust policy:
+#    {
+#      "Version": "2012-10-17",
+#      "Statement": [
+#        {
+#          "Effect": "Allow",
+#          "Principal": {
+#            "AWS": "arn:aws:iam::123456789012:root"
+#          },
+#          "Action": "sts:AssumeRole",
+#          "Condition": {
+#            "StringEquals": {
+#              "sts:ExternalId": "university-slurm-burst"
+#            }
+#          }
+#        }
+#      ]
+#    }
+
+ecosystem:
+  auto_detect: true
+  shared_config_path: /etc/research-computing/cross-account-shared.yaml

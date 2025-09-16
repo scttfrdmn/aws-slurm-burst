@@ -1,0 +1,75 @@
+# ⚠️ WARNING: Static Access Keys (DISCOURAGED - Use for Development Only)
+# 🚨 SECURITY RISK: Long-lived credentials are a security anti-pattern
+# 💡 RECOMMENDATION: Use instance_profile, assume_role, or sso instead
+
+aws:
+  region: us-east-1
+  authentication_method: access_keys  # DISCOURAGED - security risk
+  access_keys:
+    access_key_id: "AKIA..."          # ⚠️ SECURITY RISK
+    secret_access_key: "..."          # ⚠️ NEVER commit to version control
+    # session_token: "..."            # Optional for temporary access keys
+
+# ⚠️ SECURITY WARNINGS:
+# - Access keys are long-lived credentials that pose security risks
+# - Keys can be accidentally committed to version control
+# - No automatic rotation or expiration
+# - Difficult to audit and manage across users
+# - Not suitable for production academic environments
+
+# 💡 BETTER ALTERNATIVES:
+
+# 1. EC2 Instance Profile (Recommended for AWS-hosted head nodes):
+# aws:
+#   authentication_method: instance_profile
+
+# 2. AWS SSO (Recommended for universities):
+# aws:
+#   authentication_method: sso
+#   sso:
+#     profile_name: "university-research"
+
+# 3. AssumeRole (Recommended for cross-account scenarios):
+# aws:
+#   authentication_method: assume_role
+#   assume_role:
+#     role_arn: "arn:aws:iam::123456789012:role/SlurmBurstRole"
+
+# 📋 WHEN ACCESS KEYS MIGHT BE ACCEPTABLE:
+# - Local development and testing only
+# - Legacy systems migration (temporary)
+# - CI/CD pipelines with short-lived keys
+# - Emergency access scenarios
+
+# 🔒 IF YOU MUST USE ACCESS KEYS:
+# - Use temporary access keys with session tokens
+# - Rotate keys regularly (monthly at minimum)
+# - Store in environment variables, never in config files
+# - Use separate keys for different environments
+# - Enable CloudTrail for API call auditing
+# - Set up billing alerts for unexpected usage
+
+slurm:
+  bin_path: /usr/bin/
+  partitions:
+    - partition_name: aws-dev  # Development partition only
+      node_groups:
+        - node_group_name: test
+          max_nodes: 5          # Limited for development
+          region: us-east-1
+          purchasing_option: spot  # Minimize costs for development
+          launch_template_specification:
+            launch_template_name: "dev-slurm-template"
+            version: "$Latest"
+          launch_template_overrides:
+            - instance_type: t3.medium  # Small instances for testing
+            - instance_type: t3.large
+          subnet_ids:
+            - subnet-dev-12345678
+          security_group_ids:
+            - sg-dev-12345678
+          iam_instance_profile: "DevComputeInstanceRole"
+
+logging:
+  level: debug  # Enable detailed logging for development
+  format: text

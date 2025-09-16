@@ -1,0 +1,80 @@
+# Web Identity Federation for Kubernetes/Container Deployments
+# Perfect for modern container-based Slurm deployments on EKS
+
+aws:
+  region: us-east-1
+  authentication_method: web_identity
+  web_identity:
+    role_arn: "arn:aws:iam::123456789012:role/EKSSlurmBurstRole"
+    token_file: "/var/run/secrets/eks.amazonaws.com/serviceaccount/token"
+    session_name: "slurm-burst-pod"
+
+# Modern Container Deployment Benefits:
+# - No long-lived credentials
+# - Kubernetes service account integration
+# - Automatic token rotation
+# - Pod-level security isolation
+# - Cloud-native security best practices
+
+# Required Kubernetes Setup:
+# 1. Create service account with IAM role annotation
+# 2. Configure IRSA (IAM Roles for Service Accounts)
+# 3. Deploy Slurm head node as Kubernetes deployment
+# 4. Mount service account token for web identity
+
+# Example Kubernetes ServiceAccount:
+# apiVersion: v1
+# kind: ServiceAccount
+# metadata:
+#   name: slurm-burst-sa
+#   namespace: slurm
+#   annotations:
+#     eks.amazonaws.com/role-arn: "arn:aws:iam::123456789012:role/EKSSlurmBurstRole"
+
+# Example Deployment:
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: slurm-head-node
+# spec:
+#   template:
+#     spec:
+#       serviceAccountName: slurm-burst-sa
+#       containers:
+#       - name: slurm-head
+#         image: slurm:latest
+#         volumeMounts:
+#         - name: aws-token
+#           mountPath: /var/run/secrets/eks.amazonaws.com/serviceaccount
+#           readOnly: true
+
+slurm:
+  bin_path: /usr/bin/
+  partitions:
+    - partition_name: aws
+      node_groups:
+        - node_group_name: cpu
+          max_nodes: 50
+          region: us-east-1
+          purchasing_option: spot
+          launch_template_specification:
+            launch_template_name: "eks-slurm-compute-template"
+            version: "$Latest"
+          launch_template_overrides:
+            - instance_type: c5.large
+            - instance_type: c5.xlarge
+            - instance_type: c6i.large
+          subnet_ids:
+            - subnet-eks-private-1a
+            - subnet-eks-private-1b
+          security_group_ids:
+            - sg-eks-slurm-compute
+          iam_instance_profile: "EKSComputeInstanceRole"
+
+ecosystem:
+  auto_detect: true
+  data_exchange_dir: /var/spool/asbx/ecosystem
+
+logging:
+  level: info
+  format: json  # Structured logging for Kubernetes

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	burstConfig "github.com/scttfrdmn/aws-slurm-burst/internal/config"
@@ -25,23 +24,69 @@ type FleetManager struct {
 
 // NewFleetManager creates a new fleet manager
 func NewFleetManager(logger *zap.Logger, awsConfig *burstConfig.AWSConfig) (*FleetManager, error) {
-	cfg, err := config.LoadDefaultConfig(context.Background(),
-		config.WithRegion(awsConfig.Region),
-		config.WithRetryMaxAttempts(awsConfig.RetryMaxAttempts),
-		config.WithRetryMode(aws.RetryMode(awsConfig.RetryMode)),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load AWS config: %w", err)
+	// Create authentication configuration
+	authConfig := &AuthenticationConfig{
+		Method:  AuthenticationMethod(awsConfig.AuthenticationMethod),
+		Profile: awsConfig.Profile,
 	}
 
-	if awsConfig.Profile != "" {
-		cfg, err = config.LoadDefaultConfig(context.Background(),
-			config.WithSharedConfigProfile(awsConfig.Profile),
-			config.WithRegion(awsConfig.Region),
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load AWS config with profile: %w", err)
+	// Set method-specific configuration
+	if awsConfig.AssumeRole != nil {
+		authConfig.AssumeRole = &AssumeRoleConfig{
+			RoleARN:         awsConfig.AssumeRole.RoleARN,
+			SessionName:     awsConfig.AssumeRole.SessionName,
+			DurationSeconds: awsConfig.AssumeRole.DurationSeconds,
+			ExternalID:      awsConfig.AssumeRole.ExternalID,
+			Policy:          awsConfig.AssumeRole.Policy,
 		}
+	}
+
+	if awsConfig.SSO != nil {
+		authConfig.SSO = &SSOConfig{
+			ProfileName: awsConfig.SSO.ProfileName,
+			StartURL:    awsConfig.SSO.StartURL,
+			AccountID:   awsConfig.SSO.AccountID,
+			RoleName:    awsConfig.SSO.RoleName,
+		}
+	}
+
+	if awsConfig.WebIdentity != nil {
+		authConfig.WebIdentity = &WebIdentityConfig{
+			RoleARN:     awsConfig.WebIdentity.RoleARN,
+			TokenFile:   awsConfig.WebIdentity.TokenFile,
+			SessionName: awsConfig.WebIdentity.SessionName,
+		}
+	}
+
+	if awsConfig.CrossAccount != nil {
+		authConfig.CrossAccount = &CrossAccountConfig{
+			SourceProfile: awsConfig.CrossAccount.SourceProfile,
+			TargetRoleARN: awsConfig.CrossAccount.TargetRoleARN,
+			ExternalID:    awsConfig.CrossAccount.ExternalID,
+			SessionName:   awsConfig.CrossAccount.SessionName,
+		}
+	}
+
+	if awsConfig.AccessKeys != nil {
+		authConfig.AccessKeys = &AccessKeysConfig{
+			AccessKeyID:     awsConfig.AccessKeys.AccessKeyID,
+			SecretAccessKey: awsConfig.AccessKeys.SecretAccessKey,
+			SessionToken:    awsConfig.AccessKeys.SessionToken,
+		}
+	}
+
+	// Default to instance profile if no method specified
+	if authConfig.Method == "" {
+		authConfig.Method = AuthMethodInstanceProfile
+	}
+
+	// Create authentication provider
+	authProvider := NewAuthenticationProvider(logger, authConfig)
+
+	// Get AWS configuration with secure authentication
+	cfg, err := authProvider.GetAWSConfig(context.Background(), awsConfig.Region)
+	if err != nil {
+		return nil, fmt.Errorf("failed to configure AWS authentication: %w", err)
 	}
 
 	ec2Client := ec2.NewFromConfig(cfg)
