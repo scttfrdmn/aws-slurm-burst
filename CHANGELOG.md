@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-## [0.4.0] - 2025-09-13
+## [0.4.0] - 2025-09-15
 
 ### Added
 - **Modern AWS Authentication**: Comprehensive security architecture with 6 authentication methods
