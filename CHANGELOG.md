@@ -13,6 +13,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+## [0.4.0] - 2025-09-13
+
+### Added
+- **Modern AWS Authentication**: Comprehensive security architecture with 6 authentication methods
+- **IAM Identity Center (SSO)**: Perfect integration for university identity management
+- **STS AssumeRole**: Temporary credentials for secure cross-account research
+- **Web Identity Federation**: Kubernetes/container-native authentication
+- **Cross-Account Support**: Multi-institution research collaboration security
+- **Operational Independence**: Auto-detection with graceful enhancement when ecosystem available
+- **Security Documentation**: Complete authentication guide with academic compliance considerations
+
+### Changed
+- **Authentication Architecture**: Modern AWS SDK v2 authentication patterns
+- **Configuration Format**: Support for multiple authentication methods with auto-detection
+- **Security Defaults**: Instance profile as secure default instead of access keys
+
+### Security
+- **Access Keys Discouraged**: Supported for compatibility but with prominent security warnings
+- **Credential Validation**: Automatic validation and permission checking
+- **Academic Compliance**: NSF, NIH, DOE grant requirement support
+- **Audit Trails**: Complete credential usage tracking and monitoring
+
 ## [0.3.0] - 2025-09-13
 
 ### Added
